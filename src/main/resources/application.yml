@@ -1,0 +1,85 @@
+spring:
+  config:
+    import: optional:classpath:application-secret.yml
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+exclude-auth-path-patterns:
+  paths:
+    - path-pattern: /api/auth/signup
+      method: POST
+    - path-pattern: /api/auth/login
+      method: POST
+    - path-pattern: /api/auth/reissue
+      method: POST
+    - path-pattern: /api/auth/verify
+      method: POST
+    - path-pattern: /api/email/**
+      method: POST
+    - path-pattern: /swagger-ui.html
+      method: GET
+    - path-pattern: /swagger-ui/index.html
+      method: GET
+    - path-pattern: /swagger-ui/**
+      method: GET
+    - path-pattern: /v3/api-docs
+      method: GET
+    - path-pattern: /v3/api-docs/swagger-config
+      method: GET
+    - path-pattern: /actuator/**
+      method: GET
+    - path-pattern: /**
+      method: OPTIONS
+
+exclude-blacklist-path-patterns:
+  paths:
+    - path-pattern: /api/auth/signup
+      method: POST
+    - path-pattern: /api/auth/login
+      method: POST
+    - path-pattern: /api/auth/reissue
+      method: POST
+    - path-pattern: /api/auth/verify
+      method: POST
+    - path-pattern: /api/email/**
+      method: POST
+    - path-pattern: /swagger-ui.html
+      method: GET
+    - path-pattern: /swagger-ui/index.html
+      method: GET
+    - path-pattern: /swagger-ui/**
+      method: GET
+    - path-pattern: /v3/api-docs
+      method: GET
+    - path-pattern: /v3/api-docs/swagger-config
+      method: GET
+    - path-pattern: /actuator/**
+      method: GET
+    - path-pattern: /**
+      method: OPTIONS
+
+cors:
+  allowed-origins: "*"  # 개발 환경: 모든 origin 허용 (프로덕션에서는 특정 origin만 허용)
+  allowed-methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  allowed-headers: "Authorization,Content-Type,Accept,Origin,X-Requested-With"
+  max-age: 3600
+
+# Swagger
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    groups-order: DESC # path, query, body, response 순서대로 출력
+    tags-sorter: alpha # 태그를 알파벳 순으로 정렬
+    operations-sorter: method # delete - get - patch - post - put 순으로 정렬
+    enabled: true
+    try-it-out-enabled: true
+    display-request-duration: true
+  paths-to-match:
+    - /api/**
