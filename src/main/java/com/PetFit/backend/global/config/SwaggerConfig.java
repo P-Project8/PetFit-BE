@@ -31,13 +31,17 @@ public class SwaggerConfig {
         SecurityRequirement requirement = new SecurityRequirement()
                 .addList(schemeName);
 
-        // 3) 서버 URL 설정
-        Server server = new Server()
+        // 3) 서버 URL 설정 (여러 서버 옵션 제공)
+        Server localServer = new Server()
                 .url("http://localhost:8080")
                 .description("Local Development Server");
+        
+        Server remoteServer = new Server()
+                .url("http://43.200.89.199:8080")
+                .description("Remote Server");
 
         return new OpenAPI()
-                .servers(List.of(server))
+                .servers(List.of(localServer, remoteServer))
                 .components(components)
                 .addSecurityItem(requirement)
                 .info(new Info()
