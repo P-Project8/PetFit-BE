@@ -1,6 +1,6 @@
 # PetFit Service
 
-PetFit 백엔드 인증 서비스입니다. 반려동물 의류 쇼핑몰을 위한 사용자 인증 및 이메일 인증 기능을 제공합니다.
+PetFit 백엔드 서비스입니다. 
 
 ## 📋 프로젝트 개요
 
@@ -470,6 +470,7 @@ docker run -p 8080:8080 petfit-service
 PetFit 서비스는 AWS 클라우드 환경에 배포되어 있으며, 다음과 같은 구조로 구성되어 있습니다.
 
 ### 인프라 구성 요소
+<img width="977" height="699" alt="스크린샷 2025-12-03 오후 4 34 04" src="https://github.com/user-attachments/assets/7ff29c48-b673-4fc9-ba78-a6ba5f0271cb" />
 
 #### 프론트엔드
 - **플랫폼**: Vercel
@@ -528,6 +529,7 @@ PetFit 서비스는 AWS 클라우드 환경에 배포되어 있으며, 다음과
 - 비밀번호 규칙 검증
 
 ## 📊 데이터베이스 스키마
+<img width="1180" height="597" alt="스크린샷 2025-12-09 오후 6 31 47" src="https://github.com/user-attachments/assets/1928e2f6-735d-4f9d-a96a-80062156976b" />
 
 
 
@@ -551,16 +553,8 @@ PetFit 서비스는 AWS 클라우드 환경에 배포되어 있으며, 다음과
 - 상수명: UPPER_SNAKE_CASE
 
 ### 커밋 메시지
+<img width="370" height="321" alt="스크린샷 2025-12-12 오전 10 16 27" src="https://github.com/user-attachments/assets/03cf1739-464f-4ecb-8aec-ae3129a4571a" />
 
-```
-feat: 새로운 기능 추가
-fix: 버그 수정
-docs: 문서 수정
-style: 코드 포맷팅
-refactor: 코드 리팩토링
-test: 테스트 추가
-chore: 빌드 설정 변경
-```
 
 ## 🤝 기여하기
 
