@@ -10,10 +10,13 @@ PetFit은 반려동물 의류를 검색, 구매하고 AI 가상 피팅을 체험
 
 - **Framework**: Spring Boot 3.x, Java 17
 - **Database**: PostgreSQL
-- **Authentication**: JWT (Access + Refresh Token)
+- **Cache**: Redis
+- **Security**: Spring Security, JWT (JJWT)
+- **Email**: Spring Mail (Google SMTP)
 - **AI**: Google Gemini API
 - **API Docs**: Swagger (SpringDoc OpenAPI)
 - **Build**: Gradle
+- **Container**: Docker
 
 ## 주요 기능
 
@@ -35,6 +38,7 @@ PetFit은 반려동물 의류를 검색, 구매하고 AI 가상 피팅을 체험
 
 - Java 17 이상
 - PostgreSQL
+- Docker Desktop (Redis 실행용)
 - Git
 
 ### 1. 클론
@@ -64,6 +68,10 @@ spring:
     username: postgres
     password: {본인 DB 비밀번호}
     driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
   mail:
     host: smtp.gmail.com
     port: 587
@@ -98,7 +106,13 @@ GEMINI_API_KEY: {Google Gemini API 키}
 1. [Google AI Studio](https://aistudio.google.com/apikey)에서 API 키 생성
 2. Google Cloud Console에서 Generative Language API 활성화
 
-### 4. 실행
+### 4. Redis 실행
+
+```bash
+docker compose up -d redis
+```
+
+### 5. 실행
 
 ```bash
 ./gradlew bootRun
@@ -107,7 +121,7 @@ GEMINI_API_KEY: {Google Gemini API 키}
 첫 실행 시 JPA가 자동으로 테이블을 생성하고, `data-seed.sql`로 초기 데이터가 삽입됩니다.
 - 카테고리 7개, 상품 180개, 상품 옵션 1,740개, 리뷰 84개
 
-### 5. 확인
+### 6. 확인
 
 - **Swagger UI**: http://localhost:8080/swagger-ui/index.html
 - **프론트엔드 연동**: http://localhost:5173 (프론트 dev 서버)
@@ -164,7 +178,7 @@ com.PetFit.backend
 - **Access Token** (1시간): API 요청 인증에 사용. 짧은 만료시간으로 탈취 시 피해 최소화
 - **Refresh Token** (7일): Access Token 재발급용. DB에 저장하여 서버 측 폐기 가능
 - **Token Blacklist**: 로그아웃 시 Access Token을 블랙리스트에 등록하여 즉시 무효화
-- **Token Whitelist**: 인메모리 캐시로 자주 사용되는 토큰의 검증 성능 최적화
+- **Token Whitelist**: Redis 캐시로 자주 사용되는 토큰의 검증 성능 최적화
 
 ### 비밀번호
 
@@ -174,7 +188,7 @@ com.PetFit.backend
 ### 이메일 인증
 
 - 6자리 랜덤 인증코드 발송 (Google SMTP)
-- 인증코드 5분 후 자동 만료
+- Redis TTL을 통한 인증코드 5분 후 자동 만료
 - 최대 시도 횟수 제한 (5회)으로 무차별 대입 방지
 
 ### API 보안

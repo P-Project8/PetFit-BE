@@ -4,10 +4,13 @@
 - **Framework**: Spring Boot 3.x
 - **Language**: Java 17
 - **Database**: PostgreSQL
-- **Authentication**: JWT (Access + Refresh Token)
+- **Cache**: Redis
+- **Security**: Spring Security, JWT (JJWT)
+- **Email**: Spring Mail (Google SMTP)
 - **AI**: Google Gemini API
 - **API Docs**: Swagger (SpringDoc OpenAPI)
 - **Build**: Gradle
+- **Container**: Docker
 
 ---
 
@@ -43,20 +46,14 @@ com.PetFit.backend
 │       │   │   └── UpdateProfileUseCase.java   # 프로필 수정
 │       │   ├── domain/
 │       │   │   ├── entity/
-│       │   │   │   ├── User.java               # 사용자 엔티티
-│       │   │   │   ├── RefreshToken.java        # Refresh Token 엔티티 (DB 저장)
-│       │   │   │   ├── TokenBlacklist.java      # 로그아웃된 토큰 블랙리스트
-│       │   │   │   └── EmailVerification.java   # 이메일 인증 코드/상태
+│       │   │   │   └── User.java               # 사용자 엔티티
 │       │   │   ├── repository/
-│       │   │   │   ├── UserRepository.java
-│       │   │   │   ├── RefreshTokenRepository.java
-│       │   │   │   ├── TokenBlacklistRepository.java
-│       │   │   │   └── EmailVerificationRepository.java
+│       │   │   │   └── UserRepository.java
 │       │   │   └── service/
 │       │   │       ├── UserService.java             # 사용자 CRUD
-│       │   │       ├── RefreshTokenService.java     # Refresh Token 저장/조회/삭제
-│       │   │       ├── TokenBlacklistService.java   # 토큰 블랙리스트 관리
-│       │   │       ├── TokenWhitelistService.java   # 토큰 화이트리스트 (인메모리)
+│       │   │       ├── RefreshTokenService.java     # Refresh Token 관리 (Redis)
+│       │   │       ├── TokenBlacklistService.java   # 토큰 블랙리스트 (Redis)
+│       │   │       ├── TokenWhitelistService.java   # 토큰 화이트리스트 (Redis)
 │       │   │       └── TokenReissueService.java     # 토큰 재발급 로직
 │       │   └── presentation/
 │       │       ├── AuthController.java          # 로그인/회원가입/로그아웃/토큰 API
@@ -78,7 +75,7 @@ com.PetFit.backend
 │           │   └── VerifyEmailUseCase.java            # 인증 코드 검증
 │           ├── domain/service/
 │           │   ├── EmailService.java                  # 이메일 발송 (SMTP)
-│           │   └── EmailVerificationService.java      # 인증 코드 저장/검증 (DB)
+│           │   └── EmailVerificationService.java      # 인증 코드 저장/검증 (Redis)
 │           └── presentation/
 │               ├── EmailController.java
 │               └── dto/
