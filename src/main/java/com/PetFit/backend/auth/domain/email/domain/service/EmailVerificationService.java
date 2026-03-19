@@ -1,45 +1,38 @@
 package com.PetFit.backend.auth.domain.email.domain.service;
 
-import com.PetFit.backend.auth.domain.auth.domain.entity.EmailVerification;
-import com.PetFit.backend.auth.domain.auth.domain.repository.EmailVerificationRepository;
+import java.time.Duration;
+import java.util.Random;
+
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.Random;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class EmailVerificationService {
 
-    private final EmailVerificationRepository emailVerificationRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+    private static final String VERIFICATION_PREFIX = "EMAIL_VERIFIED:";
+    private static final String VERIFICATION_CODE_PREFIX = "EMAIL_VERIFICATION_CODE:";
+    private static final String VERIFICATION_ATTEMPT_PREFIX = "EMAIL_VERIFICATION_ATTEMPT:";
 
     private static final long VERIFICATION_CODE_TTL_SECONDS = 300;
     private static final int MAX_ATTEMPT_COUNT = 5;
+    private static final long ATTEMPT_TTL_SECONDS = 600;
 
     public void markEmailAsVerified(String email, long ttlSeconds) {
-        emailVerificationRepository.findByEmail(email)
-                .ifPresentOrElse(
-                        EmailVerification::markVerified,
-                        () -> emailVerificationRepository.save(EmailVerification.builder()
-                                .email(email)
-                                .verified(true)
-                                .expiresAt(LocalDateTime.now().plusSeconds(ttlSeconds))
-                                .build())
-                );
-        log.info("이메일 인증 상태 저장: {}", email);
+        String key = VERIFICATION_PREFIX + email;
+        redisTemplate.opsForValue().set(key, "true", Duration.ofSeconds(ttlSeconds));
+        log.info("이메일 인증 상태 저장: {}, TTL: {}초", email, ttlSeconds);
     }
 
-    @Transactional(readOnly = true)
     public boolean isEmailVerified(String email) {
-        return emailVerificationRepository.findByEmail(email)
-                .filter(ev -> !ev.isExpired())
-                .map(EmailVerification::getVerified)
-                .orElse(false);
+        String key = VERIFICATION_PREFIX + email;
+        String verified = redisTemplate.opsForValue().get(key);
+        return "true".equals(verified);
     }
 
     public String generateVerificationCode() {
@@ -49,57 +42,65 @@ public class EmailVerificationService {
     }
 
     public void saveVerificationCode(String email, String code) {
-        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(VERIFICATION_CODE_TTL_SECONDS);
-        emailVerificationRepository.findByEmail(email)
-                .ifPresentOrElse(
-                        existing -> existing.updateCode(code, expiresAt),
-                        () -> emailVerificationRepository.save(EmailVerification.builder()
-                                .email(email)
-                                .code(code)
-                                .expiresAt(expiresAt)
-                                .build())
-                );
-        log.info("이메일 인증 코드 저장: {}", email);
+        String key = VERIFICATION_CODE_PREFIX + email;
+        redisTemplate.opsForValue().set(key, code, Duration.ofSeconds(VERIFICATION_CODE_TTL_SECONDS));
+        log.info("이메일 인증 코드 저장: {}, TTL: {}초", email, VERIFICATION_CODE_TTL_SECONDS);
     }
 
     public boolean verifyCode(String email, String inputCode) {
-        EmailVerification ev = emailVerificationRepository.findByEmail(email).orElse(null);
-
-        if (ev == null || ev.isExpired()) {
-            log.warn("이메일 인증 코드가 존재하지 않거나 만료: {}", email);
-            return false;
-        }
-
-        if (ev.isMaxAttemptsExceeded(MAX_ATTEMPT_COUNT)) {
+        if (isMaxAttemptsExceeded(email)) {
             log.warn("이메일 인증 시도 횟수 초과: {}", email);
             throw new RuntimeException("인증 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.");
         }
 
-        if (ev.getCode().equals(inputCode)) {
-            ev.markVerified();
+        String key = VERIFICATION_CODE_PREFIX + email;
+        String storedCode = redisTemplate.opsForValue().get(key);
+
+        if (storedCode == null) {
+            log.warn("이메일 인증 코드가 존재하지 않음: {}", email);
+            incrementAttemptCount(email);
+            return false;
+        }
+
+        if (storedCode.equals(inputCode)) {
+            redisTemplate.delete(key);
+            redisTemplate.delete(VERIFICATION_ATTEMPT_PREFIX + email);
             log.info("이메일 인증 코드 검증 성공: {}", email);
             return true;
         }
 
-        ev.incrementAttempt();
         log.warn("이메일 인증 코드 불일치: {}", email);
+        incrementAttemptCount(email);
         return false;
     }
 
     public void removeVerificationCode(String email) {
-        emailVerificationRepository.findByEmail(email)
-                .ifPresent(ev -> emailVerificationRepository.delete(ev));
+        redisTemplate.delete(VERIFICATION_CODE_PREFIX + email);
     }
 
-    @Transactional(readOnly = true)
     public int getRemainingAttemptCount(String email) {
-        return emailVerificationRepository.findByEmail(email)
-                .map(ev -> Math.max(0, MAX_ATTEMPT_COUNT - ev.getAttemptCount()))
-                .orElse(MAX_ATTEMPT_COUNT);
+        String key = VERIFICATION_ATTEMPT_PREFIX + email;
+        String countStr = redisTemplate.opsForValue().get(key);
+        int count = countStr != null ? Integer.parseInt(countStr) : 0;
+        return Math.max(0, MAX_ATTEMPT_COUNT - count);
     }
 
     public void removeEmailVerification(String email) {
-        emailVerificationRepository.findByEmail(email)
-                .ifPresent(ev -> emailVerificationRepository.delete(ev));
+        redisTemplate.delete(VERIFICATION_PREFIX + email);
+    }
+
+    private void incrementAttemptCount(String email) {
+        String key = VERIFICATION_ATTEMPT_PREFIX + email;
+        Long count = redisTemplate.opsForValue().increment(key);
+        if (count != null && count == 1) {
+            redisTemplate.expire(key, Duration.ofSeconds(ATTEMPT_TTL_SECONDS));
+        }
+    }
+
+    private boolean isMaxAttemptsExceeded(String email) {
+        String key = VERIFICATION_ATTEMPT_PREFIX + email;
+        String countStr = redisTemplate.opsForValue().get(key);
+        int count = countStr != null ? Integer.parseInt(countStr) : 0;
+        return count >= MAX_ATTEMPT_COUNT;
     }
 }

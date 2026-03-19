@@ -1,49 +1,32 @@
 package com.PetFit.backend.auth.domain.auth.domain.service;
 
-import com.PetFit.backend.auth.domain.auth.domain.entity.RefreshToken;
-import com.PetFit.backend.auth.domain.auth.domain.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class RefreshTokenService {
 
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+    private static final String PREFIX = "REFRESH_TOKEN:";
 
     public void saveRefreshToken(String userId, String refreshToken, Duration timeout) {
-        LocalDateTime expiresAt = LocalDateTime.now().plus(timeout);
-        refreshTokenRepository.findByUserId(userId)
-                .ifPresentOrElse(
-                        existing -> existing.update(refreshToken, expiresAt),
-                        () -> refreshTokenRepository.save(RefreshToken.builder()
-                                .userId(userId)
-                                .token(refreshToken)
-                                .expiresAt(expiresAt)
-                                .build())
-                );
+        redisTemplate.opsForValue().set(PREFIX + userId, refreshToken, timeout);
     }
 
     public void deleteRefreshToken(String userId) {
-        refreshTokenRepository.deleteByUserId(userId);
+        redisTemplate.delete(PREFIX + userId);
     }
 
     public String findByUserId(String userId) {
-        return refreshTokenRepository.findByUserId(userId)
-                .filter(rt -> !rt.isExpired())
-                .map(RefreshToken::getToken)
-                .orElse(null);
+        return redisTemplate.opsForValue().get(PREFIX + userId);
     }
 
     public boolean isExist(String token, String userId) {
-        return refreshTokenRepository.findByUserId(userId)
-                .filter(rt -> !rt.isExpired())
-                .map(rt -> rt.getToken().equals(token))
-                .orElse(false);
+        String storedToken = findByUserId(userId);
+        return token.equals(storedToken);
     }
 }

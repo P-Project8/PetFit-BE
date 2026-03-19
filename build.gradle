@@ -60,6 +60,9 @@ dependencies {
 	implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.7.0'
 	implementation 'com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5'
 
+	// Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
 	// Database
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'org.postgresql:postgresql'
