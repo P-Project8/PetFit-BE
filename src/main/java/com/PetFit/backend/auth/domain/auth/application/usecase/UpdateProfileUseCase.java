@@ -1,7 +1,7 @@
 package com.PetFit.backend.auth.domain.auth.application.usecase;
 
-import com.PetFit.backend.auth.domain.auth.application.dto.request.UpdateProfileRequest;
-import com.PetFit.backend.auth.domain.auth.application.dto.response.ProfileResponse;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.request.UpdateProfileRequest;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.response.ProfileResponse;
 import com.PetFit.backend.auth.domain.auth.domain.entity.User;
 import com.PetFit.backend.auth.domain.auth.domain.service.UserService;
 import com.PetFit.backend.global.exception.RestApiException;

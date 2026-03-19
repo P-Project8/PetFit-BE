@@ -3,8 +3,8 @@ package com.PetFit.backend.auth.domain.auth.domain.service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.PetFit.backend.auth.domain.auth.application.dto.request.SignUpRequest;
-import com.PetFit.backend.auth.domain.auth.application.dto.response.ProfileResponse;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.request.SignUpRequest;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.response.ProfileResponse;
 import com.PetFit.backend.auth.domain.auth.domain.entity.User;
 import com.PetFit.backend.auth.domain.auth.domain.repository.UserRepository;
 import com.PetFit.backend.global.exception.RestApiException;

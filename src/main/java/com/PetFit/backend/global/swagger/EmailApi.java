@@ -1,8 +1,8 @@
 package com.PetFit.backend.global.swagger;
 
-import com.PetFit.backend.auth.domain.email.application.dto.request.SendVerificationRequest;
-import com.PetFit.backend.auth.domain.email.application.dto.request.VerifyEmailRequest;
-import com.PetFit.backend.auth.domain.email.application.dto.response.EmailVerificationResponse;
+import com.PetFit.backend.auth.domain.email.presentation.dto.request.SendVerificationRequest;
+import com.PetFit.backend.auth.domain.email.presentation.dto.request.VerifyEmailRequest;
+import com.PetFit.backend.auth.domain.email.presentation.dto.response.EmailVerificationResponse;
 import com.PetFit.backend.global.common.BaseResponse;
 
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,11 +1,11 @@
 package com.PetFit.backend.auth.domain.email.domain.service;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -23,42 +23,28 @@ import lombok.extern.slf4j.Slf4j;
 public class EmailService {
 
     private final JavaMailSender mailSender;
-    private final RedisTemplate<String, String> redisTemplate;
     private final TokenProvider tokenProvider;
     private final EmailVerificationService emailVerificationService;
 
     @Value("${email.from}")
     private String fromEmail;
 
+    // 인메모리 rate limiting
+    private final Map<String, Long> cooldownMap = new ConcurrentHashMap<>();
+    private final Map<String, Integer> dailyAttemptMap = new ConcurrentHashMap<>();
 
-    // Redis 키 접두사
-    private final static String COOLDOWN_PREFIX = "EMAIL_COOLDOWN:";
-    private final static String ATTEMPT_PREFIX = "EMAIL_ATTEMPT:";
-    private final static DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    // Rate Limiting 상수
     private static final int MAX_DAILY_ATTEMPTS = 5;
-    private static final long COOLDOWN_SECONDS = 60;
+    private static final long COOLDOWN_MILLIS = 60_000;
 
-
-    /**
-     * 회원가입용 이메일 인증 코드 발송
-     * @param email 인증할 이메일 주소
-     */
     public void sendVerificationCode(String email) {
-        // 쿨다운 확인
         if (isInCooldown(email)) {
-            log.warn("이메일 발송 쿨다운 중: {}", email);
             throw new RuntimeException("이메일 발송 쿨다운 중입니다. 잠시 후 다시 시도해주세요.");
         }
-        
-        // 일일 발송 시도 횟수 확인
+
         if (isDailyLimitExceeded(email)) {
-            log.warn("일일 이메일 발송 시도 횟수 초과: {}", email);
             throw new RuntimeException("일일 이메일 발송 횟수를 초과했습니다.");
         }
 
-        // 6자리 인증 코드 생성 및 저장
         String verificationCode = emailVerificationService.generateVerificationCode();
         emailVerificationService.saveVerificationCode(email, verificationCode);
 
@@ -82,20 +68,10 @@ public class EmailService {
                 + "</div>";
 
         sendHtmlMail(email, subject, html);
-        
-        // 쿨다운 설정
-        setCooldown(email, COOLDOWN_SECONDS);
-        
-        // 발송 시도 횟수 증가
+        setCooldown(email);
         incrementAttemptCount(email);
     }
 
-    /**
-     * 회원가입용 이메일 인증 코드 검증
-     * @param email 이메일 주소
-     * @param code 인증 코드
-     * @return 검증 성공 여부
-     */
     public boolean verifySignupCode(String email, String code) {
         try {
             return emailVerificationService.verifyCode(email, code);
@@ -104,11 +80,6 @@ public class EmailService {
         }
     }
 
-    /**
-     * 회원가입용 JWT 토큰 검증 (기존 호환성 유지)
-     * @param token 검증할 JWT 토큰
-     * @return 검증 성공 여부
-     */
     public boolean verifySignupToken(String token) {
         try {
             boolean isValid = tokenProvider.validateEmailVerificationToken(token, "signup");
@@ -121,17 +92,10 @@ public class EmailService {
         }
     }
 
-
-    /**
-     * JWT 토큰에서 이메일 추출
-     * @param token JWT 토큰
-     * @return 이메일 주소
-     */
     public String getEmailFromToken(String token) {
         return tokenProvider.getEmailFromVerificationToken(token).orElse(null);
     }
 
-    // 공통 HTML 메일 전송
     private void sendHtmlMail(String to, String subject, String htmlContent) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -151,66 +115,29 @@ public class EmailService {
         }
     }
 
-    // Rate Limiting 관련 메서드들
     private boolean isInCooldown(String email) {
-        try {
-            String key = COOLDOWN_PREFIX + email;
-            String cooldown = redisTemplate.opsForValue().get(key);
-            return cooldown != null;
-        } catch (Exception e) {
-            log.warn("이메일 쿨다운 확인 실패: {}", e.getMessage());
+        Long until = cooldownMap.get(email);
+        if (until == null) return false;
+        if (System.currentTimeMillis() > until) {
+            cooldownMap.remove(email);
             return false;
         }
+        return true;
     }
 
-    private void setCooldown(String email, long cooldownSeconds) {
-        try {
-            String key = COOLDOWN_PREFIX + email;
-            redisTemplate.opsForValue().set(key, "true", Duration.ofSeconds(cooldownSeconds));
-            log.info("이메일 쿨다운 설정: {}, {}초", email, cooldownSeconds);
-        } catch (Exception e) {
-            log.error("이메일 쿨다운 설정 실패: {}", e.getMessage());
-        }
+    private void setCooldown(String email) {
+        cooldownMap.put(email, System.currentTimeMillis() + COOLDOWN_MILLIS);
     }
 
-    private int getTodayAttemptCount(String email) {
-        try {
-            String today = LocalDate.now().format(DATE_FORMATTER);
-            String key = ATTEMPT_PREFIX + email + ":" + today;
-            String countStr = redisTemplate.opsForValue().get(key);
-            return countStr != null ? Integer.parseInt(countStr) : 0;
-        } catch (Exception e) {
-            log.warn("이메일 발송 시도 횟수 확인 실패: {}", e.getMessage());
-            return 0;
-        }
+    private String todayKey(String email) {
+        return email + ":" + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
     }
 
     private void incrementAttemptCount(String email) {
-        try {
-            String today = LocalDate.now().format(DATE_FORMATTER);
-            String key = ATTEMPT_PREFIX + email + ":" + today;
-            
-            Long count = redisTemplate.opsForValue().increment(key);
-            if (count == 1) {
-                long secondsUntilMidnight = getSecondsUntilMidnight();
-                redisTemplate.expire(key, Duration.ofSeconds(secondsUntilMidnight));
-            }
-            
-            log.info("이메일 발송 시도 횟수 증가: {}, {}회", email, count);
-        } catch (Exception e) {
-            log.error("이메일 발송 시도 횟수 증가 실패: {}", e.getMessage());
-        }
+        dailyAttemptMap.merge(todayKey(email), 1, Integer::sum);
     }
 
     private boolean isDailyLimitExceeded(String email) {
-        return getTodayAttemptCount(email) >= MAX_DAILY_ATTEMPTS;
-    }
-
-    private long getSecondsUntilMidnight() {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        return java.time.Duration.between(
-                java.time.LocalDateTime.now(),
-                tomorrow.atStartOfDay()
-        ).getSeconds();
+        return dailyAttemptMap.getOrDefault(todayKey(email), 0) >= MAX_DAILY_ATTEMPTS;
     }
 }

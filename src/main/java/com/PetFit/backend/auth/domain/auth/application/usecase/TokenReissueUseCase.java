@@ -5,7 +5,7 @@ import java.time.Duration;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.PetFit.backend.auth.domain.auth.application.dto.response.TokenReissueResponse;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.response.TokenReissueResponse;
 import com.PetFit.backend.auth.domain.auth.domain.entity.User;
 import com.PetFit.backend.auth.domain.auth.domain.service.RefreshTokenService;
 import com.PetFit.backend.auth.domain.auth.domain.service.UserService;

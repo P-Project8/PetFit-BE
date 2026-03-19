@@ -32,4 +32,8 @@ public abstract class BaseEntity {
         deletedAt = LocalDateTime.now();
     }
 
+    public void restore() {
+        deletedAt = null;
+    }
+
 }

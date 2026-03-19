@@ -1,30 +1,31 @@
 package com.PetFit.backend.auth.domain.auth.domain.service;
 
+import com.PetFit.backend.auth.domain.auth.domain.entity.TokenBlacklist;
+import com.PetFit.backend.auth.domain.auth.domain.repository.TokenBlacklistRepository;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.Objects;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TokenBlacklistService {
-    private static final Logger log = LoggerFactory.getLogger(TokenBlacklistService.class);
-    private final RedisTemplate<String, String> redisTemplate;
-    private final static String blacklistPrefix = "BLACKLIST:";
 
+    private final TokenBlacklistRepository tokenBlacklistRepository;
+
+    @Transactional(readOnly = true)
     public boolean isBlacklistToken(String token) {
-
-        String savedToken = redisTemplate.opsForValue().get(blacklistPrefix + token);
-        boolean blacklisted = savedToken != null && Objects.equals(savedToken, token);
-
-        return blacklisted;
+        return tokenBlacklistRepository.existsByToken(token);
     }
 
     public void blacklist(String token, Duration expiration) {
-        redisTemplate.opsForValue().set(blacklistPrefix + token, token, expiration);
+        LocalDateTime expiresAt = LocalDateTime.now().plus(expiration);
+        tokenBlacklistRepository.save(TokenBlacklist.builder()
+                .token(token)
+                .expiresAt(expiresAt)
+                .build());
     }
 }

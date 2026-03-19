@@ -1,6 +1,6 @@
 package com.PetFit.backend.auth.domain.auth.application.usecase;
 
-import com.PetFit.backend.auth.domain.auth.application.dto.response.ProfileResponse;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.response.ProfileResponse;
 import com.PetFit.backend.auth.domain.auth.domain.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

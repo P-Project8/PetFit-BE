@@ -3,7 +3,7 @@ package com.PetFit.backend.auth.domain.email.application.usecase;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.PetFit.backend.auth.domain.email.application.dto.request.SendVerificationRequest;
+import com.PetFit.backend.auth.domain.email.presentation.dto.request.SendVerificationRequest;
 import com.PetFit.backend.auth.domain.email.domain.service.EmailService;
 import com.PetFit.backend.global.exception.RestApiException;
 import static com.PetFit.backend.global.exception.code.status.EmailErrorStatus.EMAIL_COOLDOWN_ACTIVE;

@@ -6,11 +6,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.PetFit.backend.auth.domain.auth.application.dto.request.LoginRequest;
-import com.PetFit.backend.auth.domain.auth.application.dto.request.SignUpRequest;
-import com.PetFit.backend.auth.domain.auth.application.dto.request.TokenReissueRequest;
-import com.PetFit.backend.auth.domain.auth.application.dto.response.LoginResponse;
-import com.PetFit.backend.auth.domain.auth.application.dto.response.TokenReissueResponse;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.request.LoginRequest;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.request.SignUpRequest;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.request.TokenReissueRequest;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.response.LoginResponse;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.response.TokenReissueResponse;
 import com.PetFit.backend.auth.domain.auth.domain.entity.User;
 import com.PetFit.backend.auth.domain.auth.domain.service.RefreshTokenService;
 import com.PetFit.backend.auth.domain.auth.domain.service.TokenBlacklistService;

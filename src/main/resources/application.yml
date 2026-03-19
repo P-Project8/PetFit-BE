@@ -9,6 +9,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 파일 하나당 최대 용량
+      max-request-size: 10MB   # 한 번의 요청에 보낼 수 있는 전체 용량
 
 exclude-auth-path-patterns:
   paths:
@@ -36,6 +40,16 @@ exclude-auth-path-patterns:
       method: GET
     - path-pattern: /**
       method: OPTIONS
+    - path-pattern: /api/products/**
+      method: GET
+    - path-pattern: /api/categories/**
+      method: GET
+    - path-pattern: /api/reviews/**
+      method: GET
+    - path-pattern: /api/wishlist/counts
+      method: GET
+    - path-pattern: /api/ai/**
+      method: POST
 
 exclude-blacklist-path-patterns:
   paths:
@@ -83,3 +97,9 @@ springdoc:
     display-request-duration: true
   paths-to-match:
     - /api/**
+
+# AI
+ai:
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+    model: gemini-2.5-flash-image

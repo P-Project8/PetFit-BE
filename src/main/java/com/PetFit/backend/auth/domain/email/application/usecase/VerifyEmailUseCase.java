@@ -3,8 +3,8 @@ package com.PetFit.backend.auth.domain.email.application.usecase;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.PetFit.backend.auth.domain.email.application.dto.request.VerifyEmailRequest;
-import com.PetFit.backend.auth.domain.email.application.dto.response.EmailVerificationResponse;
+import com.PetFit.backend.auth.domain.email.presentation.dto.request.VerifyEmailRequest;
+import com.PetFit.backend.auth.domain.email.presentation.dto.response.EmailVerificationResponse;
 import com.PetFit.backend.auth.domain.email.domain.service.EmailService;
 import com.PetFit.backend.auth.domain.email.domain.service.EmailVerificationService;
 import com.PetFit.backend.global.exception.RestApiException;

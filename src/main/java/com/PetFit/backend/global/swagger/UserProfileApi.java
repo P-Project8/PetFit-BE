@@ -1,7 +1,7 @@
 package com.PetFit.backend.global.swagger;
 
-import com.PetFit.backend.auth.domain.auth.application.dto.request.UpdateProfileRequest;
-import com.PetFit.backend.auth.domain.auth.application.dto.response.ProfileResponse;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.request.UpdateProfileRequest;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.response.ProfileResponse;
 import com.PetFit.backend.global.common.BaseResponse;
 
 import io.swagger.v3.oas.annotations.Operation;

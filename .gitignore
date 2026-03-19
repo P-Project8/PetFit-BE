@@ -3,3 +3,5 @@
 /src/main/resources/secret/
 /src/main/resources/application-secret.yml
 /.gradle/
+.claude/
+CLAUDE.md

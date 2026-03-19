@@ -1,32 +1,34 @@
 package com.PetFit.backend.auth.domain.auth.domain.service;
 
-import java.time.Duration;
-
-import org.springframework.data.redis.core.RedisTemplate;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
+import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class TokenWhitelistService {
-    private final RedisTemplate<String, String> redisTemplate;
 
-    private final static String whitelistPrefix = "WHITELIST:";
+    // 인메모리 캐시 (서버 재시작 시 초기화 - 학교 프로젝트 수준에서 충분)
+    private final Map<String, Long> whitelist = new ConcurrentHashMap<>();
 
     public boolean isWhitelistToken(String token) {
-        // 너무 잦은 호출이라면 debug 로만 남겨두고
-        String saved = redisTemplate.opsForValue().get(whitelistPrefix + token);
-        boolean result = saved != null && saved.equals(token);
-        return result;
+        Long expiresAt = whitelist.get(token);
+        if (expiresAt == null) return false;
+        if (System.currentTimeMillis() > expiresAt) {
+            whitelist.remove(token);
+            return false;
+        }
+        return true;
     }
 
-
     public void whitelist(String token, Duration timeout) {
-        redisTemplate.opsForValue().set(whitelistPrefix + token, token, timeout);
+        whitelist.put(token, System.currentTimeMillis() + timeout.toMillis());
     }
 
     public void deleteWhitelistToken(String token) {
-        redisTemplate.delete(whitelistPrefix + token);
+        whitelist.remove(token);
     }
 }

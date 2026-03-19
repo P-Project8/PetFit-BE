@@ -4,7 +4,7 @@ import java.time.Duration;
 
 import org.springframework.stereotype.Service;
 
-import com.PetFit.backend.auth.domain.auth.application.dto.response.TokenReissueResponse;
+import com.PetFit.backend.auth.domain.auth.presentation.dto.response.TokenReissueResponse;
 import com.PetFit.backend.auth.domain.auth.domain.entity.User;
 import com.PetFit.backend.global.exception.RestApiException;
 import static com.PetFit.backend.global.exception.code.status.AuthErrorStatus.EXPIRED_MEMBER_JWT;
