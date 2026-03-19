@@ -157,6 +157,37 @@ com.PetFit.backend
 
 자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
 
+## 보안
+
+### 인증 (JWT)
+
+- **Access Token** (1시간): API 요청 인증에 사용. 짧은 만료시간으로 탈취 시 피해 최소화
+- **Refresh Token** (7일): Access Token 재발급용. DB에 저장하여 서버 측 폐기 가능
+- **Token Blacklist**: 로그아웃 시 Access Token을 블랙리스트에 등록하여 즉시 무효화
+- **Token Whitelist**: 인메모리 캐시로 자주 사용되는 토큰의 검증 성능 최적화
+
+### 비밀번호
+
+- BCrypt 해싱 알고리즘 적용 (평문 저장하지 않음)
+- 비밀번호 규칙 검증 (최소 길이, 영문/숫자/특수문자 조합)
+
+### 이메일 인증
+
+- 6자리 랜덤 인증코드 발송 (Google SMTP)
+- 인증코드 5분 후 자동 만료
+- 최대 시도 횟수 제한 (5회)으로 무차별 대입 방지
+
+### API 보안
+
+- Spring Security 필터 체인으로 모든 요청 검증
+- 인증이 필요 없는 공개 API 경로만 화이트리스트로 관리
+- CORS 설정으로 허용된 Origin만 접근 가능
+- Soft Delete 적용으로 데이터 영구 삭제 방지
+
+## 기여
+
+코드 컨벤션과 개발 가이드는 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
+
 ## 팀
 
 PetFit Development Team (P-Project8)
