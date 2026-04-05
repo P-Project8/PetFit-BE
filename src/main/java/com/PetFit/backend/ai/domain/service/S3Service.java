@@ -19,6 +19,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@org.springframework.boot.autoconfigure.condition.ConditionalOnBean(software.amazon.awssdk.services.s3.S3Client.class)
 public class S3Service {
 
     private final S3Client s3Client;
