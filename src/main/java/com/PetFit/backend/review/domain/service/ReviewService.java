@@ -41,6 +41,17 @@ public class ReviewService {
         return reviewRepository.findAverageRatingByProductId(productId);
     }
 
+    public java.util.Map<Long, double[]> getReviewStatsMap() {
+        java.util.Map<Long, double[]> map = new java.util.HashMap<>();
+        for (Object[] row : reviewRepository.findReviewStatsGroupByProductId()) {
+            Long productId = (Long) row[0];
+            Double avg = (Double) row[1];
+            Long count = (Long) row[2];
+            map.put(productId, new double[]{avg, count});
+        }
+        return map;
+    }
+
     public Review save(Review review) {
         return reviewRepository.save(review);
     }

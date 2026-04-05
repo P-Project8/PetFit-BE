@@ -14,6 +14,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -23,7 +25,11 @@ public class ProductUseCase {
     private final ReviewService reviewService;
 
     public Page<ProductListResponse> getProducts(Pageable pageable) {
-        return productService.findAll(pageable).map(ProductListResponse::from);
+        Map<Long, double[]> statsMap = reviewService.getReviewStatsMap();
+        return productService.findAll(pageable).map(product -> {
+            double[] stats = statsMap.getOrDefault(product.getId(), new double[]{0.0, 0.0});
+            return ProductListResponse.from(product, stats[0], (long) stats[1]);
+        });
     }
 
     public ProductDetailResponse getProduct(Long id) {
@@ -34,19 +40,35 @@ public class ProductUseCase {
     }
 
     public Page<ProductListResponse> searchProducts(String keyword, Pageable pageable) {
-        return productService.search(keyword, pageable).map(ProductListResponse::from);
+        Map<Long, double[]> statsMap = reviewService.getReviewStatsMap();
+        return productService.search(keyword, pageable).map(product -> {
+            double[] stats = statsMap.getOrDefault(product.getId(), new double[]{0.0, 0.0});
+            return ProductListResponse.from(product, stats[0], (long) stats[1]);
+        });
     }
 
     public Page<ProductListResponse> filterProducts(Long categoryId, Integer minPrice, Integer maxPrice, Pageable pageable) {
-        return productService.filter(categoryId, minPrice, maxPrice, pageable).map(ProductListResponse::from);
+        Map<Long, double[]> statsMap = reviewService.getReviewStatsMap();
+        return productService.filter(categoryId, minPrice, maxPrice, pageable).map(product -> {
+            double[] stats = statsMap.getOrDefault(product.getId(), new double[]{0.0, 0.0});
+            return ProductListResponse.from(product, stats[0], (long) stats[1]);
+        });
     }
 
     public Page<ProductListResponse> getCuratedProducts() {
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return productService.findAll(pageable).map(ProductListResponse::from);
+        Map<Long, double[]> statsMap = reviewService.getReviewStatsMap();
+        return productService.findAll(pageable).map(product -> {
+            double[] stats = statsMap.getOrDefault(product.getId(), new double[]{0.0, 0.0});
+            return ProductListResponse.from(product, stats[0], (long) stats[1]);
+        });
     }
 
     public Page<ProductListResponse> getProductsSortedByPopularity(Pageable pageable) {
-        return productService.findAllSortedByReviewCount(pageable).map(ProductListResponse::from);
+        Map<Long, double[]> statsMap = reviewService.getReviewStatsMap();
+        return productService.findAllSortedByReviewCount(pageable).map(product -> {
+            double[] stats = statsMap.getOrDefault(product.getId(), new double[]{0.0, 0.0});
+            return ProductListResponse.from(product, stats[0], (long) stats[1]);
+        });
     }
 }

@@ -23,4 +23,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @Query("SELECT COALESCE(AVG(r.rating), 0) FROM Review r WHERE r.product.id = :productId AND r.deletedAt IS NULL")
     Double findAverageRatingByProductId(@Param("productId") Long productId);
+
+    @Query("SELECT r.product.id, COALESCE(AVG(r.rating), 0), COUNT(r) FROM Review r WHERE r.deletedAt IS NULL GROUP BY r.product.id")
+    java.util.List<Object[]> findReviewStatsGroupByProductId();
 }
