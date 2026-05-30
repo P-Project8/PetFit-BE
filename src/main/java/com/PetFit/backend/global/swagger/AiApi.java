@@ -1,22 +1,37 @@
 package com.PetFit.backend.global.swagger;
 
 import com.PetFit.backend.ai.presentation.dto.request.StyleRequest;
+import com.PetFit.backend.ai.presentation.dto.response.StyleHistoryResponse;
 import com.PetFit.backend.ai.presentation.dto.response.StyleResponse;
 import com.PetFit.backend.global.common.BaseResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "AI Styling", description = "AI 가상 피팅 API")
+import java.util.List;
+
+@Tag(name = "AI Styling", description = "AI 가상 피팅 API (인증 필수)")
 public interface AiApi {
 
-    @Operation(summary = "AI 스타일링", description = "반려동물 사진에 선택한 옷을 AI로 가상 피팅합니다.")
+    @Operation(summary = "AI 스타일링",
+            description = "반려동물 사진에 선택한 옷을 AI로 가상 피팅합니다. 결과는 S3에 저장되고 사용자 이력에 기록됩니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "스타일링 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 입력"),
+            @ApiResponse(responseCode = "401", description = "인증 필요"),
             @ApiResponse(responseCode = "500", description = "AI 서비스 오류")
     })
-    BaseResponse<StyleResponse> generateStyling(StyleRequest request);
+    BaseResponse<StyleResponse> generateStyling(
+            String userId,
+            StyleRequest request);
+
+    @Operation(summary = "스타일링 이력 조회", description = "내가 생성한 AI 스타일링 이력 목록을 최신순으로 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    BaseResponse<List<StyleHistoryResponse>> getStylingHistory(String userId);
 }

@@ -7,5 +7,7 @@ public record StyleRequest(
         String petImageBase64,
 
         @NotBlank(message = "옷 이미지는 필수입니다.")
-        String clothImageBase64
+        String clothImageBase64,
+
+        Long productId
 ) {}

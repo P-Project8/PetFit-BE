@@ -48,8 +48,6 @@ exclude-auth-path-patterns:
       method: GET
     - path-pattern: /api/wishlist/counts
       method: GET
-    - path-pattern: /api/ai/**
-      method: POST
 
 exclude-blacklist-path-patterns:
   paths:
@@ -103,3 +101,11 @@ ai:
   gemini:
     api-key: ${GEMINI_API_KEY}
     model: gemini-2.5-flash-image
+
+# AWS S3 (defaults; application-secret.yml에서 오버라이드)
+cloud:
+  aws:
+    s3:
+      bucket: petfit-group-8
+    region:
+      static: ap-northeast-2

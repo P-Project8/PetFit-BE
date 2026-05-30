@@ -23,7 +23,7 @@ public class AiStyling extends BaseEntity {
     @Column(nullable = false)
     private String userId;
 
-    @Column(nullable = false)
+    @Column
     private Long productId;
 
     @Column(nullable = false, length = 1000)

@@ -71,6 +71,16 @@ email:
   from: \${EMAIL_FROM:}
 
 GEMINI_API_KEY: \${GEMINI_API_KEY:}
+
+cloud:
+  aws:
+    credentials:
+      access-key: \${AWS_ACCESS_KEY:}
+      secret-key: \${AWS_SECRET_KEY:}
+    s3:
+      bucket: \${AWS_S3_BUCKET:petfit-group-8}
+    region:
+      static: \${AWS_REGION:ap-northeast-2}
 SECRETEOF
 
 # 3. 백엔드 JAR 빌드
@@ -96,6 +106,10 @@ EMAIL_FROM=${EMAIL_FROM:-}
 MAIL_USERNAME=${MAIL_USERNAME:-}
 MAIL_PASSWORD=${MAIL_PASSWORD:-}
 GEMINI_API_KEY=${GEMINI_API_KEY:-}
+AWS_ACCESS_KEY=${AWS_ACCESS_KEY:-}
+AWS_SECRET_KEY=${AWS_SECRET_KEY:-}
+AWS_S3_BUCKET=${AWS_S3_BUCKET:-petfit-group-8}
+AWS_REGION=${AWS_REGION:-ap-northeast-2}
 ENVEOF
 
 # 기존 컨테이너 정리 후 재시작

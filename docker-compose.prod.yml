@@ -49,6 +49,10 @@ services:
       SPRING_MAIL_USERNAME: ${MAIL_USERNAME:-}
       SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CLOUD_AWS_CREDENTIALS_ACCESS_KEY: ${AWS_ACCESS_KEY:-}
+      CLOUD_AWS_CREDENTIALS_SECRET_KEY: ${AWS_SECRET_KEY:-}
+      CLOUD_AWS_S3_BUCKET: ${AWS_S3_BUCKET:-petfit-group-8}
+      CLOUD_AWS_REGION_STATIC: ${AWS_REGION:-ap-northeast-2}
     depends_on:
       postgres:
         condition: service_healthy
