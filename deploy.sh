@@ -28,9 +28,43 @@ else
 fi
 
 if [ -d "$FRONTEND_DIR" ]; then
-    cd $FRONTEND_DIR && git pull origin main
+    cd $FRONTEND_DIR && git pull origin master
 else
-    git clone https://github.com/P-Project8/PetFit-Front.git $FRONTEND_DIR
+    git clone -b master https://github.com/P-Project8/PetFit-Front.git $FRONTEND_DIR
+fi
+
+# 1-2. 프론트엔드 패치 적용 (deploy 전용 파일 + 타입 호환성 수정)
+echo ""
+echo "[1.5/4] 프론트엔드 패치 적용..."
+
+PATCH_DIR="$BACKEND_DIR/frontend-patches"
+if [ -d "$PATCH_DIR" ]; then
+    CONFLICT_FOUND=0
+    while IFS= read -r patch; do
+        rel="${patch#$PATCH_DIR/}"
+
+        # README는 건너뜀
+        if [ "$rel" = "README.md" ]; then
+            continue
+        fi
+
+        target="$FRONTEND_DIR/$rel"
+
+        # 기존 파일과 다르면 (== 프론트 분이 master에 직접 수정한 흔적이 있으면) 경고
+        if [ -f "$target" ] && ! cmp -s "$patch" "$target"; then
+            # diff가 있으면 프론트 master에 변화가 있다는 의미
+            # 충돌일 수도 있고, 우리 패치를 master가 그대로 반영하지 않은 것일 수도 있음
+            # 일단 경고만 표시하고 덮어쓴다
+            echo "  ! 변경 감지: $rel (프론트 분이 같은 파일을 수정했을 수 있음)"
+        fi
+
+        mkdir -p "$(dirname "$target")"
+        cp "$patch" "$target"
+        echo "  + 패치 적용: $rel"
+    done < <(find "$PATCH_DIR" -type f)
+    echo "  프론트엔드 패치 적용 완료"
+else
+    echo "  (frontend-patches 폴더 없음, 패치 건너뜀)"
 fi
 
 # 2. application-secret.yml 생성
