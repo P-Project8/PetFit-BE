@@ -2,11 +2,15 @@ package com.PetFit.backend.pet.application.usecase;
 
 import com.PetFit.backend.global.exception.RestApiException;
 import com.PetFit.backend.global.exception.code.status.PetErrorStatus;
+import com.PetFit.backend.order.domain.repository.OrderItemRepository;
 import com.PetFit.backend.pet.domain.entity.PetProfile;
+import com.PetFit.backend.pet.domain.repository.PetProfileRepository;
 import com.PetFit.backend.pet.domain.service.PetService;
 import com.PetFit.backend.pet.presentation.dto.request.CreatePetRequest;
 import com.PetFit.backend.pet.presentation.dto.request.UpdatePetRequest;
 import com.PetFit.backend.pet.presentation.dto.response.PetResponse;
+import com.PetFit.backend.pet.presentation.dto.response.SimilarPetCurationResponse;
+import com.PetFit.backend.pet.presentation.dto.response.SimilarPetCurationResponse.RecommendedProduct;
 import com.PetFit.backend.pet.presentation.dto.response.SizeRecommendationResponse;
 import com.PetFit.backend.pet.presentation.dto.response.SizeRecommendationResponse.OptionFit;
 import com.PetFit.backend.product.domain.entity.Product;
@@ -17,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -25,8 +30,13 @@ import java.util.List;
 @Transactional
 public class PetUseCase {
 
+    private static final double SIMILAR_CHEST_RATIO = 0.20; // ±20%
+    private static final int CURATION_LIMIT = 10;
+
     private final PetService petService;
     private final ProductService productService;
+    private final PetProfileRepository petProfileRepository;
+    private final OrderItemRepository orderItemRepository;
 
     public PetResponse create(String userId, CreatePetRequest request) {
         petService.checkLimit(userId);
@@ -116,6 +126,49 @@ public class PetUseCase {
                 product.getId(), product.getName(),
                 recommended, reasoning, fits
         );
+    }
+
+    /**
+     * 유사 체형 큐레이션.
+     * 본인 반려견과 가슴둘레 ±20% 범위의 다른 사용자들의 구매 데이터에서 인기 상품 추천.
+     */
+    @Transactional(readOnly = true)
+    public SimilarPetCurationResponse curateSimilarProducts(String userId, Long petId) {
+        PetProfile pet = petService.findOwnedOrThrow(petId, userId);
+
+        double minChest = pet.getChestSize() * (1 - SIMILAR_CHEST_RATIO);
+        double maxChest = pet.getChestSize() * (1 + SIMILAR_CHEST_RATIO);
+
+        List<String> similarUserIds = petProfileRepository.findUserIdsWithSimilarChestSize(
+                userId, minChest, maxChest);
+
+        if (similarUserIds.isEmpty()) {
+            return new SimilarPetCurationResponse(
+                    pet.getId(), pet.getName(), pet.getChestSize(),
+                    0, List.of());
+        }
+
+        List<Object[]> aggregates = orderItemRepository.findTopOrderedProductsByUserIds(similarUserIds);
+        int totalOrders = aggregates.stream()
+                .mapToInt(row -> ((Long) row[1]).intValue())
+                .sum();
+
+        List<RecommendedProduct> products = new ArrayList<>();
+        for (Object[] row : aggregates) {
+            if (products.size() >= CURATION_LIMIT) break;
+            Long productId = (Long) row[0];
+            Long orderCount = (Long) row[1];
+            try {
+                Product product = productService.findById(productId);
+                products.add(RecommendedProduct.of(product, orderCount, totalOrders));
+            } catch (RestApiException ignored) {
+                // 상품이 삭제된 경우는 건너뜀
+            }
+        }
+
+        return new SimilarPetCurationResponse(
+                pet.getId(), pet.getName(), pet.getChestSize(),
+                similarUserIds.size(), products);
     }
 
     // ===== Private helpers =====

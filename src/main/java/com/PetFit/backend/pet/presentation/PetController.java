@@ -7,6 +7,7 @@ import com.PetFit.backend.pet.application.usecase.PetUseCase;
 import com.PetFit.backend.pet.presentation.dto.request.CreatePetRequest;
 import com.PetFit.backend.pet.presentation.dto.request.UpdatePetRequest;
 import com.PetFit.backend.pet.presentation.dto.response.PetResponse;
+import com.PetFit.backend.pet.presentation.dto.response.SimilarPetCurationResponse;
 import com.PetFit.backend.pet.presentation.dto.response.SizeRecommendationResponse;
 
 import io.swagger.v3.oas.annotations.Parameter;
@@ -71,5 +72,13 @@ public class PetController implements PetApi {
             @PathVariable Long petId,
             @RequestParam Long productId) {
         return BaseResponse.onSuccess(petUseCase.recommendSize(userId, petId, productId));
+    }
+
+    @GetMapping("/{petId}/similar-products")
+    @Override
+    public BaseResponse<SimilarPetCurationResponse> curateSimilarProducts(
+            @Parameter(hidden = true) @CurrentUser String userId,
+            @PathVariable Long petId) {
+        return BaseResponse.onSuccess(petUseCase.curateSimilarProducts(userId, petId));
     }
 }

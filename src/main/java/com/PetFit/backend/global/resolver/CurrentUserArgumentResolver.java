@@ -32,32 +32,42 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
                                   NativeWebRequest webRequest,
                                   WebDataBinderFactory binderFactory) throws Exception {
 
+        CurrentUser annotation = parameter.getParameterAnnotation(CurrentUser.class);
+        boolean required = annotation == null || annotation.required();
+
         HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
 
         if (request == null) {
+            if (!required) return null;
             throw new RestApiException(_UNAUTHORIZED);
         }
 
-        String token = tokenProvider.getToken(request)
-                .orElseThrow(() -> {
-                    return new RestApiException(_UNAUTHORIZED);
-                });
+        var tokenOpt = tokenProvider.getToken(request);
+        if (tokenOpt.isEmpty()) {
+            if (!required) return null;
+            throw new RestApiException(_UNAUTHORIZED);
+        }
 
-        // 토큰 유효성 검증 추가
+        String token = tokenOpt.get();
+
+        // 토큰 유효성 검증
         if (!tokenProvider.validateToken(token)) {
+            if (!required) return null;
             throw new RestApiException(_UNAUTHORIZED);
         }
 
         // Access Token인지 확인
         if (!tokenProvider.isAccessToken(token)) {
+            if (!required) return null;
             throw new RestApiException(_UNAUTHORIZED);
         }
 
-        String userId = tokenProvider.getId(token)
-                .orElseThrow(() -> {
-                    return new RestApiException(_UNAUTHORIZED);
-                });
+        var idOpt = tokenProvider.getId(token);
+        if (idOpt.isEmpty()) {
+            if (!required) return null;
+            throw new RestApiException(_UNAUTHORIZED);
+        }
 
-        return userId;
+        return idOpt.get();
     }
 }

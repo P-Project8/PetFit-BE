@@ -4,6 +4,7 @@ import com.PetFit.backend.global.common.BaseResponse;
 import com.PetFit.backend.pet.presentation.dto.request.CreatePetRequest;
 import com.PetFit.backend.pet.presentation.dto.request.UpdatePetRequest;
 import com.PetFit.backend.pet.presentation.dto.response.PetResponse;
+import com.PetFit.backend.pet.presentation.dto.response.SimilarPetCurationResponse;
 import com.PetFit.backend.pet.presentation.dto.response.SizeRecommendationResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,4 +59,13 @@ public interface PetApi {
             String userId,
             @Parameter(description = "반려견 ID") Long petId,
             @Parameter(description = "상품 ID") Long productId);
+
+    @Operation(summary = "유사 체형 큐레이션",
+            description = "내 반려견과 가슴 둘레가 ±20% 범위인 다른 사용자들이 가장 많이 구매한 상품 TOP 10을 추천합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "추천 성공"),
+            @ApiResponse(responseCode = "404", description = "반려견을 찾을 수 없음")
+    })
+    BaseResponse<SimilarPetCurationResponse> curateSimilarProducts(
+            String userId, @Parameter(description = "반려견 ID") Long petId);
 }

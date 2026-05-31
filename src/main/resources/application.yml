@@ -48,6 +48,14 @@ exclude-auth-path-patterns:
       method: GET
     - path-pattern: /api/wishlist/counts
       method: GET
+    - path-pattern: /api/gallery
+      method: GET
+    - path-pattern: /api/gallery/popular
+      method: GET
+    - path-pattern: /api/gallery/*
+      method: GET
+    - path-pattern: /api/gallery/*/comments
+      method: GET
 
 exclude-blacklist-path-patterns:
   paths:
