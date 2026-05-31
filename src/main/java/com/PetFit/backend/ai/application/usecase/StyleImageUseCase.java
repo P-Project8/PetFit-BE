@@ -8,6 +8,7 @@ import com.PetFit.backend.ai.presentation.dto.response.StyleResponse;
 import com.PetFit.backend.file.domain.service.FileStorageService;
 import com.PetFit.backend.pet.domain.entity.PetProfile;
 import com.PetFit.backend.pet.domain.service.PetService;
+import com.PetFit.backend.subscription.domain.service.CreditService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +27,12 @@ public class StyleImageUseCase {
     private final FileStorageService fileStorageService;
     private final AiStylingService aiStylingService;
     private final PetService petService;
+    private final CreditService creditService;
 
     public StyleResponse execute(String userId, StyleRequest request) {
+        // 0. 크레딧 검증 (FREE 월 3회, PREMIUM 무제한) — 초과 시 402 발생
+        creditService.assertCanConsume(userId);
+
         // 1. Pre-save: 입력 이미지를 먼저 S3에 저장
         String petImageUrl = fileStorageService.uploadBase64(
                 request.petImageBase64(), STYLING_FOLDER + "/inputs", userId, "image/jpeg"
