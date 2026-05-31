@@ -6,6 +6,8 @@ import com.PetFit.backend.ai.domain.service.GeminiAIService;
 import com.PetFit.backend.ai.presentation.dto.request.StyleRequest;
 import com.PetFit.backend.ai.presentation.dto.response.StyleResponse;
 import com.PetFit.backend.file.domain.service.FileStorageService;
+import com.PetFit.backend.pet.domain.entity.PetProfile;
+import com.PetFit.backend.pet.domain.service.PetService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,7 @@ public class StyleImageUseCase {
     private final GeminiAIService geminiAIService;
     private final FileStorageService fileStorageService;
     private final AiStylingService aiStylingService;
+    private final PetService petService;
 
     public StyleResponse execute(String userId, StyleRequest request) {
         // 1. Pre-save: 입력 이미지를 먼저 S3에 저장
@@ -33,7 +36,13 @@ public class StyleImageUseCase {
                 request.clothImageBase64(), STYLING_FOLDER + "/inputs", userId, "image/jpeg"
         );
 
-        // 2. AiStyling 엔티티 생성 (PENDING 상태)
+        // 2. PetProfile 조회 (옵션)
+        PetProfile petProfile = null;
+        if (request.petProfileId() != null) {
+            petProfile = petService.findOwnedOrThrow(request.petProfileId(), userId);
+        }
+
+        // 3. AiStyling 엔티티 생성 (PENDING 상태)
         AiStyling styling = AiStyling.builder()
                 .userId(userId)
                 .productId(request.productId())
@@ -43,18 +52,27 @@ public class StyleImageUseCase {
         styling = aiStylingService.save(styling);
 
         try {
-            // 3. Gemini AI 호출
-            String resultImageBase64 = geminiAIService.generateStyledImage(
-                    request.petImageBase64(),
-                    request.clothImageBase64()
-            );
+            // 4. Gemini AI 호출 (체형 데이터가 있으면 프롬프트 강화)
+            String resultImageBase64 = petProfile != null
+                    ? geminiAIService.generateStyledImageWithProfile(
+                            request.petImageBase64(),
+                            request.clothImageBase64(),
+                            petProfile.getBreed(),
+                            petProfile.getAge(),
+                            petProfile.getWeight(),
+                            petProfile.getNeckSize(),
+                            petProfile.getChestSize(),
+                            petProfile.getBackLength())
+                    : geminiAIService.generateStyledImage(
+                            request.petImageBase64(),
+                            request.clothImageBase64());
 
-            // 4. 결과를 S3에 저장
+            // 5. 결과를 S3에 저장
             String resultImageUrl = fileStorageService.uploadBase64(
                     resultImageBase64, STYLING_FOLDER + "/results", userId, "image/png"
             );
 
-            // 5. AiStyling 완료 상태로 업데이트
+            // 6. AiStyling 완료 상태로 업데이트
             styling.complete(resultImageUrl);
             aiStylingService.save(styling);
 

@@ -17,7 +17,9 @@ import java.util.List;
 public interface AiApi {
 
     @Operation(summary = "AI 스타일링",
-            description = "반려동물 사진에 선택한 옷을 AI로 가상 피팅합니다. 결과는 S3에 저장되고 사용자 이력에 기록됩니다.")
+            description = "반려동물 사진에 선택한 옷을 AI로 가상 피팅합니다. " +
+                    "petProfileId를 함께 보내면 반려견 체형 데이터(견종/체중/가슴둘레 등)가 프롬프트에 자동 주입되어 정확도가 향상됩니다. " +
+                    "결과는 S3에 저장되고 사용자 이력에 기록됩니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "스타일링 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 입력"),

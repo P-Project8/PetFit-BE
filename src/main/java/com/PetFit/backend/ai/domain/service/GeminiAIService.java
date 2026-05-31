@@ -25,7 +25,7 @@ public class GeminiAIService {
     @Value("${ai.gemini.model:gemini-2.0-flash-exp}")
     private String model;
 
-    private static final String PROMPT = """
+    private static final String BASE_PROMPT = """
             Analyze the two images provided.
             The goal is to visualize the clothing (2nd image) on the pet (1st image).
 
@@ -41,12 +41,38 @@ public class GeminiAIService {
             """;
 
     public String generateStyledImage(String petImageBase64, String clothesImageBase64) {
+        return generateStyledImage(petImageBase64, clothesImageBase64, BASE_PROMPT);
+    }
+
+    /**
+     * 반려견 체형 정보를 함께 입력해 사이즈/실루엣을 더 정확히 렌더링한다.
+     */
+    public String generateStyledImageWithProfile(String petImageBase64, String clothesImageBase64,
+                                                 String breed, Integer age, Double weight,
+                                                 Double neckSize, Double chestSize, Double backLength) {
+        String profileLines = String.format("""
+
+                Pet profile (use this to ensure realistic body proportions and fit):
+                - Breed: %s
+                - Age: %d years
+                - Weight: %.1f kg
+                - Neck circumference: %.1f cm
+                - Chest circumference: %.1f cm
+                - Back length: %.1f cm
+
+                Make sure the clothing wraps the body in a way that respects these dimensions.
+                Avoid distorting the pet's natural body shape.
+                """, breed, age, weight, neckSize, chestSize, backLength);
+        return generateStyledImage(petImageBase64, clothesImageBase64, BASE_PROMPT + profileLines);
+    }
+
+    private String generateStyledImage(String petImageBase64, String clothesImageBase64, String prompt) {
         String url = String.format(
                 "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
                 model, apiKey
         );
 
-        Map<String, Object> requestBody = buildRequestBody(petImageBase64, clothesImageBase64);
+        Map<String, Object> requestBody = buildRequestBody(petImageBase64, clothesImageBase64, prompt);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -63,14 +89,14 @@ public class GeminiAIService {
         }
     }
 
-    private Map<String, Object> buildRequestBody(String petImageBase64, String clothesImageBase64) {
+    private Map<String, Object> buildRequestBody(String petImageBase64, String clothesImageBase64, String prompt) {
         // data:image/...;base64, 접두사 제거
         petImageBase64 = stripDataPrefix(petImageBase64);
         clothesImageBase64 = stripDataPrefix(clothesImageBase64);
 
         List<Map<String, Object>> parts = new ArrayList<>();
 
-        parts.add(Map.of("text", PROMPT));
+        parts.add(Map.of("text", prompt));
 
         parts.add(Map.of(
                 "inline_data", Map.of(
