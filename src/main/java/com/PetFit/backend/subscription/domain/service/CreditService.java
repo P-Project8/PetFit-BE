@@ -24,7 +24,7 @@ import java.time.ZoneId;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional // readOnly=false: subscriptionService.getOrCreateActive()가 최초 호출 시 FREE INSERT
 public class CreditService {
 
     public static final int FREE_MONTHLY_LIMIT = 3;

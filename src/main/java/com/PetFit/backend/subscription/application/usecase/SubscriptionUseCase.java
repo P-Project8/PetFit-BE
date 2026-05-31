@@ -21,7 +21,7 @@ public class SubscriptionUseCase {
     private final SubscriptionService subscriptionService;
     private final CreditService creditService;
 
-    @Transactional(readOnly = true)
+    // readOnly=false (클래스 레벨 상속): getOrCreateActive가 최초 호출 시 FREE INSERT 필요
     public SubscriptionResponse getMy(String userId) {
         Subscription s = subscriptionService.getOrCreateActive(userId);
         return SubscriptionResponse.from(s);
@@ -37,7 +37,7 @@ public class SubscriptionUseCase {
         return SubscriptionResponse.from(s);
     }
 
-    @Transactional(readOnly = true)
+    // readOnly=false: 내부에서 getOrCreateActive 호출하므로 INSERT 가능해야 함
     public CreditStatusResponse getCredits(String userId) {
         return CreditStatusResponse.from(creditService.getStatus(userId));
     }
