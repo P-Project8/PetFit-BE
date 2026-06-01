@@ -8,15 +8,18 @@ PetFit은 반려동물 의류를 검색, 구매하고 AI 가상 피팅을 체험
 
 ## 기술 스택
 
-- **Framework**: Spring Boot 3.x, Java 17
-- **Database**: PostgreSQL
-- **Cache**: Redis
+- **Framework**: Spring Boot 3.5.5, Java 17
+- **Database**: PostgreSQL 15
+- **Cache**: Redis 7
+- **Storage**: AWS S3 (ap-northeast-2)
 - **Security**: Spring Security, JWT (JJWT)
 - **Email**: Spring Mail (Google SMTP)
-- **AI**: Google Gemini API
+- **AI**: Google Gemini 2.5 Flash Image API
+- **Scheduler**: Spring `@Scheduled` (구독 만료 일배치)
 - **API Docs**: Swagger (SpringDoc OpenAPI)
 - **Build**: Gradle
-- **Container**: Docker
+- **Container**: Docker Compose
+- **Deploy**: AWS EC2 + Nginx Reverse Proxy
 
 ## 주요 기능
 
@@ -29,7 +32,11 @@ PetFit은 반려동물 의류를 검색, 구매하고 AI 가상 피팅을 체험
 | **찜** | 찜 추가/토글, 찜 목록 조회, 상품별 찜 수 |
 | **주문** | 장바구니 기반 주문 생성, 주문 내역 조회, 주문 취소 |
 | **리뷰** | 리뷰 작성/수정/삭제, 상품별 리뷰 조회, 평균 평점 |
-| **AI 스타일링** | 반려동물 사진 + 의류 AI 합성 (Gemini) |
+| **반려견 프로필** | 견종/체형(목·가슴·등) 등록, 사이즈 추천(XXS~5XL), 유사 체형 큐레이션 |
+| **AI 스타일링** | 반려동물 사진 + 의류 AI 합성 (Gemini), 체형 데이터 기반 프롬프트 강화 |
+| **Pet-Gallery 커뮤니티** | 스타일링 공유 피드, 좋아요/댓글, 인기 게시물 알고리즘, 상품 태그 |
+| **구독 & 크레딧** | FREE(월 3회)/PREMIUM(무제한) 플랜, 업그레이드/취소, 만료 자동 처리 |
+| **파일 (S3)** | base64/멀티파트 업로드, 폴더별 관리, 결과 영구 저장 |
 | **마이페이지** | 프로필, 주문 내역, 리뷰/찜 수 통합 조회 |
 
 ## 로컬 환경 설정
@@ -94,7 +101,19 @@ jwt:
 email:
   from: {Gmail 주소}
 
+# Google Gemini AI
 GEMINI_API_KEY: {Google Gemini API 키}
+
+# AWS S3 (스타일링 결과 / 펫 이미지 저장)
+cloud:
+  aws:
+    credentials:
+      access-key: {IAM Access Key}
+      secret-key: {IAM Secret Key}
+    s3:
+      bucket: {버킷 이름}
+    region:
+      static: ap-northeast-2
 ```
 
 **Gmail 앱 비밀번호 발급:**
@@ -130,6 +149,8 @@ docker compose up -d redis
 
 자세한 API 명세는 [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)를 참고하세요.
 
+총 **56개 API** 제공.
+
 | 도메인 | Base URL | 주요 엔드포인트 |
 |--------|----------|----------------|
 | 인증 | `/api/auth` | signup, login, logout, reissue, profile |
@@ -140,7 +161,11 @@ docker compose up -d redis
 | 찜 | `/api/wishlist` | 추가/삭제, 목록, 찜수 카운트 |
 | 주문 | `/api/orders` | 생성, 목록, 상세, 취소 |
 | 리뷰 | `/api/reviews` | 작성, 수정, 삭제, 상품별 조회 |
-| AI | `/api/ai` | 스타일링 |
+| 반려견 | `/api/pets` | CRUD, 사이즈 추천, 유사 체형 큐레이션 |
+| AI | `/api/ai` | 스타일링, 히스토리 |
+| 갤러리 | `/api/gallery` | 피드, 인기, 좋아요 토글, 댓글 CRUD |
+| 구독 | `/api/subscription` | 조회/업그레이드/취소, 크레딧 현황 |
+| 파일 | `/api/files` | S3 업로드 |
 | 마이페이지 | `/api/mypage` | 통합 정보 조회 |
 
 ## 프로젝트 구조
@@ -154,9 +179,13 @@ com.PetFit.backend
 ├── wishlist/       # 찜 목록
 ├── order/          # 주문
 ├── review/         # 리뷰
+├── pet/            # 반려견 프로필 (체형, 사이즈 추천, 유사 체형 큐레이션)
 ├── ai/             # AI 스타일링 (Gemini)
+├── gallery/        # Pet-Gallery 커뮤니티 (피드, 좋아요, 댓글)
+├── subscription/   # 구독 & 크레딧 (FREE/PREMIUM, 만료 스케줄러)
+├── file/           # S3 업로드 공통 모듈
 ├── mypage/         # 마이페이지
-└── global/         # 공통 (보안, 예외, 설정, Swagger)
+└── global/         # 공통 (보안, 예외, 설정, Swagger, Annotation)
 ```
 
 각 도메인은 아래 레이어 구조를 따릅니다:
@@ -170,6 +199,45 @@ com.PetFit.backend
 ```
 
 자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
+
+## 서비스 고도화 정책
+
+### 1. 사이즈 추천 (`pet` 도메인)
+가슴둘레(chestSize) 기준 XXS~5XL 10단계 자동 매핑.
+
+| 사이즈 | 가슴 둘레 (cm) |
+|--------|---------------|
+| XXS | 20 ~ 26 |
+| XS | 26 ~ 32 |
+| S | 32 ~ 38 |
+| M | 38 ~ 45 |
+| L | 45 ~ 53 |
+| XL | 53 ~ 60 |
+| XXL | 60 ~ 68 |
+| XXXL | 68 ~ 78 |
+| 4XL | 78 ~ 88 |
+| 5XL | 88 ~ 100 |
+
+`GET /api/pets/{petId}/size-recommendation` — 펫 체형 + 상품 옵션 매칭.
+
+### 2. 유사 체형 큐레이션 (`pet` 도메인)
+- 가슴둘레 ±20% 범위의 사용자들 식별
+- 해당 사용자들의 주문 내역 집계 → 인기 상품 Top 10
+- 각 상품별 구매 인원 / 인기도 % 계산
+- `GET /api/pets/{petId}/similar-products`
+
+### 3. 인기 게시물 알고리즘 (`gallery` 도메인)
+```
+인기 점수 = likeCount × 2 + commentCount + (최근 7일 이내 작성 시 +5)
+```
+`GET /api/gallery/popular` — 점수 내림차순 정렬.
+
+### 4. AI 크레딧 시스템 (`subscription` 도메인)
+- **FREE 플랜**: 월 3회 (`AiStyling` 카운트 기반, 실패는 미차감)
+- **PREMIUM 플랜**: 무제한, 30일 유효
+- AI 호출 직전 `CreditService.assertCanConsume()` 가드
+- 한도 초과 시 `402 PAYMENT_REQUIRED` + 에러 코드 `SUB004`
+- 만료 스케줄러: 매일 KST 01:00 PREMIUM → EXPIRED + FREE 자동 재발급
 
 ## 보안
 
