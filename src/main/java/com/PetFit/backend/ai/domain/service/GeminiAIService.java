@@ -139,6 +139,10 @@ public class GeminiAIService {
 
         try {
             List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseBody.get("candidates");
+            if (candidates == null || candidates.isEmpty()) {
+                log.error("Gemini 응답에 candidates 없음. 전체 응답: {}", responseBody);
+                throw new RestApiException(AiErrorStatus.AI_NO_IMAGE_GENERATED);
+            }
             Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
             List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
 
@@ -152,21 +156,28 @@ public class GeminiAIService {
                 }
             }
 
-            // 이미지 파트 추출
+            // 이미지 파트 추출 (Gemini는 응답에서 camelCase 사용: inlineData / mimeType)
             for (Map<String, Object> part : parts) {
-                if (part.containsKey("inline_data")) {
-                    Map<String, String> inlineData = (Map<String, String>) part.get("inline_data");
-                    String mimeType = inlineData.get("mimeType");
-                    String data = inlineData.get("data");
-                    return "data:" + mimeType + ";base64," + data;
+                Object inlineObj = part.get("inlineData");
+                if (inlineObj == null) inlineObj = part.get("inline_data"); // 혹시 모를 폴백
+                if (inlineObj instanceof Map) {
+                    Map<String, Object> inlineData = (Map<String, Object>) inlineObj;
+                    String mimeType = (String) inlineData.getOrDefault("mimeType",
+                            inlineData.get("mime_type"));
+                    String data = (String) inlineData.get("data");
+                    if (data != null) {
+                        return "data:" + mimeType + ";base64," + data;
+                    }
                 }
             }
 
+            // 이미지 없으면 디버깅용으로 응답 구조 로깅
+            log.error("Gemini 응답에 이미지 파트 없음. parts={}", parts);
             throw new RestApiException(AiErrorStatus.AI_NO_IMAGE_GENERATED);
         } catch (RestApiException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Gemini 응답 파싱 실패: {}", e.getMessage());
+            log.error("Gemini 응답 파싱 실패: {}", e.getMessage(), e);
             throw new RestApiException(AiErrorStatus.AI_RESPONSE_PARSE_ERROR);
         }
     }
