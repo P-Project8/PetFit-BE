@@ -200,6 +200,12 @@ com.PetFit.backend
 
 자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
 
+## 설계 결정 (Design Decisions)
+
+기술 선택의 근거와 trade-off는 별도 문서에서 정리합니다:
+- **[docs/DESIGN_DECISIONS.md](docs/DESIGN_DECISIONS.md)** — JWT 인증 구조, 인프라 (EC2+S3 단순 아키텍처) 선택 근거, 부하 테스트 결과
+- **[load-tests/README.md](load-tests/README.md)** — k6 기반 시나리오별 부하 테스트
+
 ## 서비스 고도화 정책
 
 ### 1. 사이즈 추천 (`pet` 도메인)
