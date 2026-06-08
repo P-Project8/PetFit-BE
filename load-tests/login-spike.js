@@ -32,7 +32,7 @@ export const options = {
 
 export default function () {
   const payload = JSON.stringify({
-    loginId: TEST_USER,
+    userId: TEST_USER,
     password: TEST_PASS,
   });
 
@@ -64,14 +64,15 @@ export function handleSummary(data) {
 }
 
 function textSummary(data) {
+  const fmt = (v) => (v == null ? 'N/A' : v.toFixed(1));
+  const d = data.metrics.http_req_duration?.values || {};
   const lines = [];
   lines.push('');
   lines.push('===== Login Spike Test Summary =====');
-  lines.push(`Total Logins: ${data.metrics.http_reqs.values.count}`);
-  lines.push(`Error Rate: ${(data.metrics.http_req_failed.values.rate * 100).toFixed(2)}%`);
-  lines.push(`Avg Response: ${data.metrics.http_req_duration.values.avg.toFixed(1)}ms`);
-  lines.push(`p95 Response: ${data.metrics.http_req_duration.values['p(95)'].toFixed(1)}ms`);
-  lines.push(`p99 Response: ${data.metrics.http_req_duration.values['p(99)'].toFixed(1)}ms`);
+  lines.push(`Total Logins: ${data.metrics.http_reqs?.values?.count ?? 0}`);
+  lines.push(`Error Rate: ${((data.metrics.http_req_failed?.values?.rate ?? 0) * 100).toFixed(2)}%`);
+  lines.push(`Avg Response: ${fmt(d.avg)}ms`);
+  lines.push(`p95 Response: ${fmt(d['p(95)'])}ms`);
   lines.push('');
   lines.push('💡 BCrypt 비용이 보통 100~300ms 차지. p95가 그 이상이면 DB 또는 JVM 풀이 병목.');
   lines.push('');

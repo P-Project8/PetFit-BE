@@ -79,15 +79,18 @@ export function handleSummary(data) {
 }
 
 function textSummary(data) {
+  const fmt = (v) => (v == null ? 'N/A' : (v / 1000).toFixed(1));
+  const d = data.metrics.http_req_duration?.values || {};
+  const count = data.metrics.http_reqs?.values?.count ?? 0;
   const lines = [];
   lines.push('');
   lines.push('===== AI Styling Load Test Summary =====');
-  lines.push(`Total Calls: ${data.metrics.http_reqs.values.count}`);
-  lines.push(`Error Rate: ${(data.metrics.http_req_failed.values.rate * 100).toFixed(2)}%`);
-  lines.push(`Avg Response: ${(data.metrics.http_req_duration.values.avg / 1000).toFixed(1)}s`);
-  lines.push(`p95 Response: ${(data.metrics.http_req_duration.values['p(95)'] / 1000).toFixed(1)}s`);
+  lines.push(`Total Calls: ${count}`);
+  lines.push(`Error Rate: ${((data.metrics.http_req_failed?.values?.rate ?? 0) * 100).toFixed(2)}%`);
+  lines.push(`Avg Response: ${fmt(d.avg)}s`);
+  lines.push(`p95 Response: ${fmt(d['p(95)'])}s`);
   lines.push('');
-  lines.push(`💰 추정 비용: ${(data.metrics.http_reqs.values.count * 0.04).toFixed(2)} USD`);
+  lines.push(`💰 추정 비용: ${(count * 0.04).toFixed(2)} USD`);
   lines.push('');
   return lines.join('\n');
 }

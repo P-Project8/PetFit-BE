@@ -65,14 +65,15 @@ export function handleSummary(data) {
 }
 
 function textSummary(data) {
+  const fmt = (v) => (v == null ? 'N/A' : v.toFixed(1));
+  const d = data.metrics.http_req_duration?.values || {};
   const lines = [];
   lines.push('');
   lines.push('===== Feed Load Test Summary =====');
-  lines.push(`Total Requests: ${data.metrics.http_reqs.values.count}`);
-  lines.push(`Error Rate: ${(data.metrics.http_req_failed.values.rate * 100).toFixed(2)}%`);
-  lines.push(`Avg Response: ${data.metrics.http_req_duration.values.avg.toFixed(1)}ms`);
-  lines.push(`p95 Response: ${data.metrics.http_req_duration.values['p(95)'].toFixed(1)}ms`);
-  lines.push(`p99 Response: ${data.metrics.http_req_duration.values['p(99)'].toFixed(1)}ms`);
+  lines.push(`Total Requests: ${data.metrics.http_reqs?.values?.count ?? 0}`);
+  lines.push(`Error Rate: ${((data.metrics.http_req_failed?.values?.rate ?? 0) * 100).toFixed(2)}%`);
+  lines.push(`Avg Response: ${fmt(d.avg)}ms`);
+  lines.push(`p95 Response: ${fmt(d['p(95)'])}ms`);
   lines.push('');
   return lines.join('\n');
 }
