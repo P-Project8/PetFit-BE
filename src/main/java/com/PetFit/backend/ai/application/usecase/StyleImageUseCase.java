@@ -6,9 +6,12 @@ import com.PetFit.backend.ai.domain.service.GeminiAIService;
 import com.PetFit.backend.ai.presentation.dto.request.StyleRequest;
 import com.PetFit.backend.ai.presentation.dto.response.StyleResponse;
 import com.PetFit.backend.file.domain.service.FileStorageService;
+import com.PetFit.backend.notification.domain.entity.Notification;
+import com.PetFit.backend.notification.domain.service.NotificationService;
 import com.PetFit.backend.pet.domain.entity.PetProfile;
 import com.PetFit.backend.pet.domain.service.PetService;
 import com.PetFit.backend.subscription.domain.service.CreditService;
+import com.PetFit.backend.subscription.domain.service.CreditService.CreditStatus;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +31,7 @@ public class StyleImageUseCase {
     private final AiStylingService aiStylingService;
     private final PetService petService;
     private final CreditService creditService;
+    private final NotificationService notificationService;
 
     public StyleResponse execute(String userId, StyleRequest request) {
         // 0. 크레딧 검증 (FREE 월 3회, PREMIUM 무제한) — 초과 시 402 발생
@@ -81,12 +85,48 @@ public class StyleImageUseCase {
             styling.complete(resultImageUrl);
             aiStylingService.save(styling);
 
+            // 7. 크레딧 임계점 알림 (FREE 사용자만)
+            sendCreditThresholdNotificationIfNeeded(userId);
+
             return new StyleResponse(styling.getId(), resultImageUrl, resultImageBase64);
         } catch (Exception e) {
             log.error("AI 스타일링 실패: userId={}, stylingId={}", userId, styling.getId(), e);
             styling.fail();
             aiStylingService.save(styling);
             throw e;
+        }
+    }
+
+    /**
+     * FREE 사용자에게 크레딧 임계점 알림.
+     * - 2/3 사용 → CREDIT_WARNING (업그레이드 유도)
+     * - 3/3 사용 → CREDIT_EXHAUSTED (다음 호출 차단 안내)
+     * 임계점에 도달한 직후 1회만 발행하기 위해 정확히 같은 횟수일 때만 트리거.
+     */
+    private void sendCreditThresholdNotificationIfNeeded(String userId) {
+        CreditStatus status = creditService.getStatus(userId);
+        if (status.unlimited()) return; // PREMIUM은 알림 X
+
+        long used = status.used();
+        int limit = status.monthlyLimit();
+
+        if (used == limit - 1) {
+            notificationService.publish(
+                    userId,
+                    Notification.TYPE_CREDIT_WARNING,
+                    "AI 크레딧 1회 남음",
+                    String.format("이번 달 AI 스타일링이 %d/%d 사용되었습니다. 무제한으로 즐기려면 프리미엄으로 업그레이드해 주세요.",
+                            used, limit),
+                    "SUBSCRIPTION",
+                    null);
+        } else if (used == limit) {
+            notificationService.publish(
+                    userId,
+                    Notification.TYPE_CREDIT_EXHAUSTED,
+                    "AI 크레딧 모두 소진",
+                    "이번 달 AI 스타일링 크레딧을 모두 사용했습니다. 프리미엄으로 업그레이드하면 무제한 이용 가능합니다.",
+                    "SUBSCRIPTION",
+                    null);
         }
     }
 }

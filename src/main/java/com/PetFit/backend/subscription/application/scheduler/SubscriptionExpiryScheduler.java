@@ -1,5 +1,7 @@
 package com.PetFit.backend.subscription.application.scheduler;
 
+import com.PetFit.backend.notification.domain.entity.Notification;
+import com.PetFit.backend.notification.domain.service.NotificationService;
 import com.PetFit.backend.subscription.domain.entity.Subscription;
 import com.PetFit.backend.subscription.domain.service.SubscriptionService;
 
@@ -21,6 +23,7 @@ import java.util.List;
 public class SubscriptionExpiryScheduler {
 
     private final SubscriptionService subscriptionService;
+    private final NotificationService notificationService;
 
     @Scheduled(cron = "0 0 1 * * *", zone = "Asia/Seoul")
     @Transactional
@@ -35,6 +38,15 @@ public class SubscriptionExpiryScheduler {
             s.expire();
             subscriptionService.save(s);
             subscriptionService.createFree(s.getUserId());
+
+            notificationService.publish(
+                    s.getUserId(),
+                    Notification.TYPE_SUBSCRIPTION_EXPIRED,
+                    "프리미엄 구독 만료",
+                    "프리미엄 구독이 만료되어 FREE 플랜으로 전환되었습니다. 다시 업그레이드하시려면 구독 페이지를 이용해 주세요.",
+                    "SUBSCRIPTION",
+                    s.getId());
+
             log.info("[SubscriptionExpiryScheduler] expired premium userId={} subscriptionId={}",
                     s.getUserId(), s.getId());
         }

@@ -10,6 +10,8 @@ import com.PetFit.backend.gallery.presentation.dto.response.GalleryResponse;
 import com.PetFit.backend.gallery.presentation.dto.response.LikeToggleResponse;
 import com.PetFit.backend.global.exception.RestApiException;
 import com.PetFit.backend.global.exception.code.status.GalleryErrorStatus;
+import com.PetFit.backend.notification.domain.entity.Notification;
+import com.PetFit.backend.notification.domain.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ import java.util.Set;
 public class GalleryUseCase {
 
     private final GalleryService galleryService;
+    private final NotificationService notificationService;
 
     // ===== Gallery =====
 
@@ -79,6 +82,18 @@ public class GalleryUseCase {
             g.decrementLike();
         }
         galleryService.save(g);
+
+        // 좋아요 추가일 때만 알림 (취소 시는 알림 X). 본인 글이면 X.
+        if (nowLiked && !g.isOwnedBy(userId)) {
+            notificationService.publish(
+                    g.getUserId(),
+                    Notification.TYPE_GALLERY_LIKED,
+                    "새 좋아요",
+                    "회원님의 게시물에 좋아요가 추가되었습니다.",
+                    "GALLERY",
+                    galleryId);
+        }
+
         return new LikeToggleResponse(galleryId, nowLiked, g.getLikeCount());
     }
 
@@ -96,6 +111,17 @@ public class GalleryUseCase {
 
         g.incrementComment();
         galleryService.save(g);
+
+        // 본인 글이면 알림 X
+        if (!g.isOwnedBy(userId)) {
+            notificationService.publish(
+                    g.getUserId(),
+                    Notification.TYPE_GALLERY_COMMENTED,
+                    "새 댓글",
+                    "회원님의 게시물에 새 댓글이 달렸습니다.",
+                    "GALLERY",
+                    galleryId);
+        }
 
         return GalleryCommentResponse.from(saved);
     }
