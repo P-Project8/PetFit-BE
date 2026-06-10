@@ -1,6 +1,7 @@
 package com.PetFit.backend.global.swagger;
 
 import com.PetFit.backend.ai.presentation.dto.request.StyleRequest;
+import com.PetFit.backend.ai.presentation.dto.response.StyleDownloadResponse;
 import com.PetFit.backend.ai.presentation.dto.response.StyleHistoryResponse;
 import com.PetFit.backend.ai.presentation.dto.response.StyleResponse;
 import com.PetFit.backend.global.common.BaseResponse;
@@ -36,4 +37,20 @@ public interface AiApi {
             @ApiResponse(responseCode = "401", description = "인증 필요")
     })
     BaseResponse<List<StyleHistoryResponse>> getStylingHistory(String userId);
+
+    @Operation(summary = "스타일링 결과 다운로드 (구독 등급별 차별화)",
+            description = """
+                    저장된 스타일링 결과를 base64 이미지로 다운로드합니다.
+                    - FREE 플랜: 512px 다운사이즈 + 'PetFit Free' 워터마크 합성
+                    - PREMIUM 플랜: 원본 해상도 그대로 + 워터마크 없음
+                    """)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "다운로드 성공"),
+            @ApiResponse(responseCode = "400", description = "스타일링 미완료"),
+            @ApiResponse(responseCode = "403", description = "본인 스타일링이 아님"),
+            @ApiResponse(responseCode = "404", description = "스타일링 결과 없음")
+    })
+    BaseResponse<StyleDownloadResponse> downloadStyling(
+            String userId,
+            @Parameter(description = "스타일링 ID") Long stylingId);
 }

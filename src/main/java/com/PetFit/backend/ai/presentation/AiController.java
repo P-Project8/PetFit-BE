@@ -1,8 +1,10 @@
 package com.PetFit.backend.ai.presentation;
 
+import com.PetFit.backend.ai.application.usecase.DownloadStyleUseCase;
 import com.PetFit.backend.ai.application.usecase.GetStyleHistoryUseCase;
 import com.PetFit.backend.ai.application.usecase.StyleImageUseCase;
 import com.PetFit.backend.ai.presentation.dto.request.StyleRequest;
+import com.PetFit.backend.ai.presentation.dto.response.StyleDownloadResponse;
 import com.PetFit.backend.ai.presentation.dto.response.StyleHistoryResponse;
 import com.PetFit.backend.ai.presentation.dto.response.StyleResponse;
 import com.PetFit.backend.global.annotation.CurrentUser;
@@ -23,6 +25,7 @@ public class AiController implements AiApi {
 
     private final StyleImageUseCase styleImageUseCase;
     private final GetStyleHistoryUseCase getStyleHistoryUseCase;
+    private final DownloadStyleUseCase downloadStyleUseCase;
 
     @PostMapping("/styling")
     @Override
@@ -37,5 +40,13 @@ public class AiController implements AiApi {
     public BaseResponse<List<StyleHistoryResponse>> getStylingHistory(
             @Parameter(hidden = true) @CurrentUser String userId) {
         return BaseResponse.onSuccess(getStyleHistoryUseCase.execute(userId));
+    }
+
+    @GetMapping("/styling/{stylingId}/download")
+    @Override
+    public BaseResponse<StyleDownloadResponse> downloadStyling(
+            @Parameter(hidden = true) @CurrentUser String userId,
+            @PathVariable Long stylingId) {
+        return BaseResponse.onSuccess(downloadStyleUseCase.execute(userId, stylingId));
     }
 }
