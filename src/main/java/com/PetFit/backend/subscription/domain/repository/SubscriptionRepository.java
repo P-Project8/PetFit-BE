@@ -18,4 +18,10 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             "AND s.endDate IS NOT NULL AND s.endDate < :now " +
             "AND s.deletedAt IS NULL")
     List<Subscription> findExpiredPremiums(@Param("now") LocalDateTime now);
+
+    // ===== Admin Stats =====
+
+    @Query("SELECT COUNT(s) FROM Subscription s " +
+            "WHERE s.deletedAt IS NULL AND s.status = 'ACTIVE' AND s.plan = :plan")
+    long countActiveByPlan(@Param("plan") String plan);
 }

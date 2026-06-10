@@ -110,6 +110,11 @@ ai:
     api-key: ${GEMINI_API_KEY}
     model: gemini-2.5-flash-image
 
+# 관리자 권한 (해당 user-id로 로그인하면 /api/admin/** 접근 가능)
+admin:
+  user-ids:
+    - test1234
+
 # AWS S3 (defaults; application-secret.yml에서 오버라이드)
 cloud:
   aws:

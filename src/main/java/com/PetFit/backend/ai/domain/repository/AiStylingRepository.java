@@ -25,4 +25,17 @@ public interface AiStylingRepository extends JpaRepository<AiStyling, Long> {
     long countByUserIdInPeriod(@Param("userId") String userId,
                                @Param("start") LocalDateTime start,
                                @Param("end") LocalDateTime end);
+
+    // ===== Admin Stats =====
+
+    @Query("SELECT COUNT(a) FROM AiStyling a WHERE a.deletedAt IS NULL")
+    long countAll();
+
+    @Query("SELECT COUNT(a) FROM AiStyling a " +
+            "WHERE a.deletedAt IS NULL AND a.status = :status")
+    long countByStatus(@Param("status") String status);
+
+    @Query("SELECT COUNT(a) FROM AiStyling a " +
+            "WHERE a.deletedAt IS NULL AND a.createdAt >= :since")
+    long countSince(@Param("since") LocalDateTime since);
 }

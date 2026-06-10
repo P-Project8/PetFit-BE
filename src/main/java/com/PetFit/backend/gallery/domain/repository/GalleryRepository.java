@@ -27,4 +27,15 @@ public interface GalleryRepository extends JpaRepository<Gallery, Long> {
             "CASE WHEN g.createdAt >= :recentThreshold THEN 5 ELSE 0 END) DESC, " +
             "g.createdAt DESC")
     Page<Gallery> findPopular(LocalDateTime recentThreshold, Pageable pageable);
+
+    // ===== Admin Stats =====
+
+    @Query("SELECT COUNT(g) FROM Gallery g WHERE g.deletedAt IS NULL")
+    long countAll();
+
+    @Query("SELECT COALESCE(SUM(g.likeCount), 0) FROM Gallery g WHERE g.deletedAt IS NULL")
+    long sumLikes();
+
+    @Query("SELECT COALESCE(SUM(g.commentCount), 0) FROM Gallery g WHERE g.deletedAt IS NULL")
+    long sumComments();
 }

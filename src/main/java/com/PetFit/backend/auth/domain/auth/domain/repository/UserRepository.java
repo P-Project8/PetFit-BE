@@ -1,5 +1,6 @@
 package com.PetFit.backend.auth.domain.auth.domain.repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,13 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("select u from User u where u.userId = :userId")
     Optional<User> findByUserId(@Param("userId") String userId);
+
+    // ===== Admin Stats =====
+
+    @Query("select count(u) from User u where u.deletedAt IS NULL")
+    long countAll();
+
+    @Query("select count(u) from User u " +
+            "where u.deletedAt IS NULL AND u.createdAt >= :since")
+    long countSince(@Param("since") LocalDateTime since);
 }
