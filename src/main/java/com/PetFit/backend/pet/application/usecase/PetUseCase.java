@@ -13,6 +13,8 @@ import com.PetFit.backend.pet.presentation.dto.response.SimilarPetCurationRespon
 import com.PetFit.backend.pet.presentation.dto.response.SimilarPetCurationResponse.RecommendedProduct;
 import com.PetFit.backend.pet.presentation.dto.response.SizeRecommendationResponse;
 import com.PetFit.backend.pet.presentation.dto.response.SizeRecommendationResponse.OptionFit;
+import com.PetFit.backend.pet.presentation.dto.response.SizeStatisticsResponse;
+import com.PetFit.backend.pet.presentation.dto.response.SizeStatisticsResponse.SizeDistribution;
 import com.PetFit.backend.product.domain.entity.Product;
 import com.PetFit.backend.product.domain.entity.ProductOption;
 import com.PetFit.backend.product.domain.service.ProductService;
@@ -169,6 +171,80 @@ public class PetUseCase {
         return new SimilarPetCurationResponse(
                 pet.getId(), pet.getName(), pet.getChestSize(),
                 similarUserIds.size(), products);
+    }
+
+    /**
+     * 유사 체형 사용자 그룹의 사이즈 선택 통계.
+     * PDF 1순위 핵심 예시: "이 강아지와 체형이 비슷한 사용자 78%가 L 사이즈를 선택했습니다."
+     *
+     * @param productId null이면 전체 상품 통계, 값 있으면 해당 상품 한정 통계
+     */
+    @Transactional(readOnly = true)
+    public SizeStatisticsResponse getSizeStatistics(String userId, Long petId, Long productId) {
+        PetProfile pet = petService.findOwnedOrThrow(petId, userId);
+
+        double minChest = pet.getChestSize() * (1 - SIMILAR_CHEST_RATIO);
+        double maxChest = pet.getChestSize() * (1 + SIMILAR_CHEST_RATIO);
+
+        List<String> similarUserIds = petProfileRepository.findUserIdsWithSimilarChestSize(
+                userId, minChest, maxChest);
+
+        String productName = null;
+        if (productId != null) {
+            try {
+                productName = productService.findById(productId).getName();
+            } catch (RestApiException ignored) {
+                // 상품 없으면 productName 없이 진행
+            }
+        }
+
+        if (similarUserIds.isEmpty()) {
+            return new SizeStatisticsResponse(
+                    pet.getId(), pet.getName(), pet.getChestSize(),
+                    productId, productName,
+                    0, 0L, null, 0,
+                    "비슷한 체형의 다른 사용자가 아직 없어 사이즈 통계를 제공할 수 없습니다.",
+                    List.of());
+        }
+
+        List<Object[]> rows = productId != null
+                ? orderItemRepository.findSizeDistributionByUserIdsAndProduct(similarUserIds, productId)
+                : orderItemRepository.findSizeDistributionByUserIds(similarUserIds);
+
+        long total = rows.stream().mapToLong(r -> (Long) r[1]).sum();
+
+        if (total == 0) {
+            return new SizeStatisticsResponse(
+                    pet.getId(), pet.getName(), pet.getChestSize(),
+                    productId, productName,
+                    similarUserIds.size(), 0L, null, 0,
+                    "비슷한 체형 사용자의 사이즈 선택 데이터가 부족합니다.",
+                    List.of());
+        }
+
+        List<SizeDistribution> distributions = rows.stream()
+                .map(r -> {
+                    String size = (String) r[0];
+                    long count = (Long) r[1];
+                    double percent = Math.round(100.0 * count / total * 10) / 10.0;
+                    return new SizeDistribution(size, count, percent);
+                })
+                .toList();
+
+        SizeDistribution top = distributions.get(0);
+        int topPercent = (int) Math.round(top.percent());
+
+        String summary = String.format(
+                "이 강아지와 체형이 비슷한 사용자 %d%%가 %s 사이즈를 선택했습니다.",
+                topPercent, top.size());
+
+        return new SizeStatisticsResponse(
+                pet.getId(), pet.getName(), pet.getChestSize(),
+                productId, productName,
+                similarUserIds.size(), total,
+                top.size(), topPercent,
+                summary,
+                distributions);
     }
 
     // ===== Private helpers =====

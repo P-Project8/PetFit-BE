@@ -6,6 +6,7 @@ import com.PetFit.backend.pet.presentation.dto.request.UpdatePetRequest;
 import com.PetFit.backend.pet.presentation.dto.response.PetResponse;
 import com.PetFit.backend.pet.presentation.dto.response.SimilarPetCurationResponse;
 import com.PetFit.backend.pet.presentation.dto.response.SizeRecommendationResponse;
+import com.PetFit.backend.pet.presentation.dto.response.SizeStatisticsResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -68,4 +69,19 @@ public interface PetApi {
     })
     BaseResponse<SimilarPetCurationResponse> curateSimilarProducts(
             String userId, @Parameter(description = "반려견 ID") Long petId);
+
+    @Operation(summary = "사이즈 선택 통계",
+            description = """
+                    내 반려견과 가슴 둘레가 ±20% 범위인 다른 사용자들이 어떤 사이즈를 선택했는지 분포를 반환합니다.
+                    productId를 지정하면 해당 상품 한정 통계, 미지정 시 전체 상품 기준 통계.
+                    예시 응답 summary: "이 강아지와 체형이 비슷한 사용자 78%가 L 사이즈를 선택했습니다."
+                    """)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공 (데이터 없으면 빈 분포 + 안내 메시지)"),
+            @ApiResponse(responseCode = "404", description = "반려견을 찾을 수 없음")
+    })
+    BaseResponse<SizeStatisticsResponse> getSizeStatistics(
+            String userId,
+            @Parameter(description = "반려견 ID") Long petId,
+            @Parameter(description = "특정 상품 ID (옵션). 미지정 시 전체 상품 통계.") Long productId);
 }

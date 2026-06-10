@@ -9,6 +9,7 @@ import com.PetFit.backend.pet.presentation.dto.request.UpdatePetRequest;
 import com.PetFit.backend.pet.presentation.dto.response.PetResponse;
 import com.PetFit.backend.pet.presentation.dto.response.SimilarPetCurationResponse;
 import com.PetFit.backend.pet.presentation.dto.response.SizeRecommendationResponse;
+import com.PetFit.backend.pet.presentation.dto.response.SizeStatisticsResponse;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
@@ -80,5 +81,14 @@ public class PetController implements PetApi {
             @Parameter(hidden = true) @CurrentUser String userId,
             @PathVariable Long petId) {
         return BaseResponse.onSuccess(petUseCase.curateSimilarProducts(userId, petId));
+    }
+
+    @GetMapping("/{petId}/size-statistics")
+    @Override
+    public BaseResponse<SizeStatisticsResponse> getSizeStatistics(
+            @Parameter(hidden = true) @CurrentUser String userId,
+            @PathVariable Long petId,
+            @RequestParam(required = false) Long productId) {
+        return BaseResponse.onSuccess(petUseCase.getSizeStatistics(userId, petId, productId));
     }
 }

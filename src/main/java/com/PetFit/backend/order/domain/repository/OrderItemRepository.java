@@ -23,4 +23,27 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             "WHERE oi.order.userId IN :userIds AND oi.order.deletedAt IS NULL " +
             "GROUP BY oi.product.id ORDER BY cnt DESC")
     List<Object[]> findTopOrderedProductsByUserIds(@Param("userIds") Collection<String> userIds);
+
+    /**
+     * 특정 사용자 그룹의 사이즈 선택 분포 (전체 상품).
+     * row[0] = size(String), row[1] = count(Long)
+     */
+    @Query("SELECT oi.productOption.size, COUNT(oi) as cnt FROM OrderItem oi " +
+            "WHERE oi.order.userId IN :userIds AND oi.order.deletedAt IS NULL " +
+            "AND oi.productOption.size IS NOT NULL AND oi.productOption.size <> '' " +
+            "GROUP BY oi.productOption.size ORDER BY cnt DESC")
+    List<Object[]> findSizeDistributionByUserIds(@Param("userIds") Collection<String> userIds);
+
+    /**
+     * 특정 사용자 그룹이 특정 상품에서 선택한 사이즈 분포.
+     * row[0] = size(String), row[1] = count(Long)
+     */
+    @Query("SELECT oi.productOption.size, COUNT(oi) as cnt FROM OrderItem oi " +
+            "WHERE oi.order.userId IN :userIds AND oi.product.id = :productId " +
+            "AND oi.order.deletedAt IS NULL " +
+            "AND oi.productOption.size IS NOT NULL AND oi.productOption.size <> '' " +
+            "GROUP BY oi.productOption.size ORDER BY cnt DESC")
+    List<Object[]> findSizeDistributionByUserIdsAndProduct(
+            @Param("userIds") Collection<String> userIds,
+            @Param("productId") Long productId);
 }
